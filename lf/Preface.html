@@ -140,7 +140,7 @@
     Effectiveness of Logic in Computer Science</i> catalogs scores of
     ways in which logic offers critical tools and insights.  Indeed,
     they observe that, "As a matter of fact, logic has turned out to
-    be significiantly more effective in computer science than it has
+    be significantly more effective in computer science than it has
     been in mathematics.  This is quite remarkable, especially since
     much of the impetus for the development of logic during the past
     one hundred years came from mathematics."
@@ -379,44 +379,57 @@
 
 <div class="paragraph"> </div>
 
- Coq runs on Windows, Linux, and OS X.  You will need:
+ Coq runs on Windows, Linux, and macOS.  You will need:
 
 <div class="paragraph"> </div>
 
 <ul class="doclist">
-<li> A current installation of Coq, available from the Coq home
-         page.  These files have been tested with Coq 8.7.1.
+<li> A current installation of Coq, available from the Coq home page.
+      These files have been tested with Coq 8.8.1.
 
 <div class="paragraph"> </div>
 
 
 </li>
 <li> An IDE for interacting with Coq.  Currently, there are two
-         choices:
+      choices:
 
 <div class="paragraph"> </div>
 
 <ul class="doclist">
 <li> Proof General is an Emacs-based IDE.  It tends to be
-             preferred by users who are already comfortable with
-             Emacs.  It requires a separate installation (google
-             "Proof General").
+          preferred by users who are already comfortable with Emacs.
+          It requires a separate installation (google "Proof
+          General").
 
 <div class="paragraph"> </div>
 
-             Adventurous users of Coq within Emacs may also want to
-             check out extensions such as <span class="inlinecode"><span class="id" type="var">company</span>-<span class="id" type="var">coq</span></span> and
-             <span class="inlinecode"><span class="id" type="var">control</span>-<span class="id" type="var">lock</span></span>.
+          Adventurous users of Coq within Emacs may also want to check
+          out extensions such as <span class="inlinecode"><span class="id" type="var">company</span>-<span class="id" type="var">coq</span></span> and <span class="inlinecode"><span class="id" type="var">control</span>-<span class="id" type="var">lock</span></span>.
 
 <div class="paragraph"> </div>
 
 
 </li>
-<li> CoqIDE is a simpler stand-alone IDE.  It is distributed
-             with Coq, so it should be available once you have Coq
-             installed.  It can also be compiled from scratch, but on
-             some platforms this may involve installing additional
-             packages for GUI libraries and such. 
+<li> CoqIDE is a simpler stand-alone IDE.  It is distributed with
+          Coq, so it should be available once you have Coq installed.
+          It can also be compiled from scratch, but on some platforms
+          this may involve installing additional packages for GUI
+          libraries and such.
+
+<div class="paragraph"> </div>
+
+          Users who like CoqIDE should consider running it with the
+          "asynchronous" and "error resilience" modes disabled:
+
+<div class="paragraph"> </div>
+
+<div class="code code-tight">
+<span class="id" type="var">coqide</span>&nbsp;-<span class="id" type="var">async</span>-<span class="id" type="var">proofs</span>&nbsp;<span class="id" type="var">off</span>&nbsp;-<span class="id" type="var">async</span>-<span class="id" type="var">proofs</span>-<span class="id" type="var">command</span>-<span class="id" type="var">error</span>-<span class="id" type="var">resilience</span>&nbsp;<span class="id" type="var">off</span>&nbsp;<span class="id" type="var">Foo.v</span>&nbsp;&amp;
+<div class="paragraph"> </div>
+
+</div>
+
 </li>
 </ul>
 
@@ -489,28 +502,47 @@
 
  A tar file containing the full sources for the "release version"
     of this book (as a collection of Coq scripts and HTML files) is
-    available at <a href="http://www.cis.upenn.edu/~bcpierce/sf"><span class="inlineref">http://www.cis.upenn.edu/~bcpierce/sf</span></a>.
+    available at <a href="http://softwarefoundations.cis.upenn.edu"><span class="inlineref">http://softwarefoundations.cis.upenn.edu</span></a>.
 
 <div class="paragraph"> </div>
 
-    (If you are using the book as part of a class, your professor may
-    give you access to a locally modified version of the files, which
-    you should use instead of the release version.) 
+    If you are using the book as part of a class, your professor may
+    give you access to a locally modified version of the files; you
+    should use this one instead of the public release version, so that
+    you get any local updates during the semester. 
+</div>
+
+<div class="doc">
+<a name="lab12"></a><h1 class="section">Resources</h1>
+
 <div class="paragraph"> </div>
 
-<a name="lab12"></a><h2 class="section">Lecture Videos</h2>
+<a name="lab13"></a><h2 class="section">Sample Exams</h2>
 
 <div class="paragraph"> </div>
 
- Lectures for an intensive summer course based on <i>Logical
-    Foundations</i> (part of the DeepSpec summer school in 2017) can be
-    found at <a href="https://deepspec.org/event/dsss17/coq_intensive.html"><span class="inlineref">https://deepspec.org/event/dsss17/coq_intensive.html</span></a>.
-    The video quality is poor at the beginning but gets better in the
+ A large compendium of exams from many offerings of
+    CIS500 ("Software Foundations") at the University of Pennsylvania
+    can be found at
+    <a href="https://www.seas.upenn.edu/~cis500/current/exams/index.html"><span class="inlineref">https://www.seas.upenn.edu/~cis500/current/exams/index.html</span></a>.
+    There has been some drift of notations over the years, but most of
+    the problems are still relevant to the current text. 
+<div class="paragraph"> </div>
+
+<a name="lab14"></a><h2 class="section">Lecture Videos</h2>
+
+<div class="paragraph"> </div>
+
+ Lectures for two intensive summer courses based on <i>Logical
+    Foundations</i> (part of the DeepSpec summer school series) can be
+    found at <a href="https://deepspec.org/event/dsss17"><span class="inlineref">https://deepspec.org/event/dsss17</span></a> and
+    <a href="https://deepspec.org/event/dsss18/"><span class="inlineref">https://deepspec.org/event/dsss18/</span></a>.  The video quality in the
+    2017 lectures is poor at the beginning but gets better in the
     later lectures. 
 </div>
 
 <div class="doc">
-<a name="lab13"></a><h1 class="section">Note for Instructors</h1>
+<a name="lab15"></a><h1 class="section">Note for Instructors</h1>
 
 <div class="paragraph"> </div>
 
@@ -520,12 +552,12 @@
 
 <div class="paragraph"> </div>
 
-    In order to keep the legalities simple and to have a single
-    point of responsibility in case the need should ever arise to
-    adjust the license terms, sublicense, etc., we ask all
-    contributors (i.e., everyone with access to the developers'
-    repository) to assign copyright in their contributions to the
-    appropriate "author of record," as follows:
+    In order to keep the legalities simple and to have a single point
+    of responsibility in case the need should ever arise to adjust the
+    license terms, sublicense, etc., we ask all contributors (i.e.,
+    everyone with access to the developers' repository) to assign
+    copyright in their contributions to the appropriate "author of
+    record," as follows:
 
 <div class="paragraph"> </div>
 
@@ -537,10 +569,11 @@
         present, the Authors of Record are as follows: For Volumes 1
         and 2, known until 2016 as "Software Foundations" and from
         2016 as (respectively) "Logical Foundations" and "Programming
-        Foundations," the Author of Record is Benjamin Pierce.  For
-        Volume 3, "Verified Functional Algorithms", the Author of
+        Foundations," and for Volume 4, "QuickChick: Property-Based
+        Testing in Coq," the Author of Record is Benjamin C. Pierce.
+        For Volume 3, "Verified Functional Algorithms", the Author of
         Record is Andrew W. Appel. For components outside of
-        designated Volumes (e.g., typesetting and grading tools and
+        designated volumes (e.g., typesetting and grading tools and
         other software infrastructure), the Author of Record is
         Benjamin Pierce.
 
@@ -549,31 +582,31 @@
 
 <div class="paragraph"> </div>
 
-    To get started, please send an email to Benjamin Pierce, describing
-    yourself and how you plan to use the materials and including 
-       (1) the above copyright transfer text and 
-       (2) the result of doing "htpasswd -s -n NAME"
-    where NAME is your preferred user name. 
+    To get started, please send an email to Benjamin Pierce,
+    describing yourself and how you plan to use the materials and
+    including (1) the above copyright transfer text and (2) your
+    github username.
 
 <div class="paragraph"> </div>
 
-    We'll set you up with access to the subversion repository and 
-    developers' mailing lists.  In the repository you'll find a 
-    file <span class="inlinecode"><span class="id" type="var">INSTRUCTORS</span></span> with further instructions. 
+    We'll set you up with access to the git repository and developers'
+    mailing lists.  In the repository you'll find a file <span class="inlinecode"><span class="id" type="var">INSTRUCTORS</span></span>
+    with further instructions. 
 </div>
 
 <div class="doc">
-<a name="lab14"></a><h1 class="section">Translations</h1>
+<a name="lab16"></a><h1 class="section">Translations</h1>
 
 <div class="paragraph"> </div>
 
  Thanks to the efforts of a team of volunteer translators,
     <i>Software Foundations</i> can be enjoyed in Japanese at
-    <a href="http://proofcafe.org/sf"><span class="inlineref">http://proofcafe.org/sf</span></a>.  A Chinese translation is underway. 
+    <a href="http://proofcafe.org/sf"><span class="inlineref">http://proofcafe.org/sf</span></a>.  A Chinese translation is also underway;
+    you can preview it at <a href="https://coq-zh.github.io/SF-zh/"><span class="inlineref">https://coq-zh.github.io/SF-zh/</span></a>. 
 </div>
 
 <div class="doc">
-<a name="lab15"></a><h1 class="section">Thanks</h1>
+<a name="lab17"></a><h1 class="section">Thanks</h1>
 
 <div class="paragraph"> </div>
 
@@ -581,6 +614,10 @@
     supported, in part, by the National Science Foundation under the
     NSF Expeditions grant 1521523, <i>The Science of Deep
     Specification</i>. 
+</div>
+<div class="code code-tight">
+
+<span class="comment">(*&nbsp;Wed&nbsp;Jan&nbsp;9&nbsp;12:02:43&nbsp;EST&nbsp;2019&nbsp;*)</span><br/>
 </div>
 </div>
 

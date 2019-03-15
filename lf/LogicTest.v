@@ -1,25 +1,33 @@
 Set Warnings "-notation-overridden,-parsing".
-Require Import Logic.
-Parameter MISSING: Type.   
+From Coq Require Export String.
+From LF Require Import Logic.
 
-Module Check.  
+Parameter MISSING: Type.
 
-Ltac check_type A B :=  
-match type of A with  
-| context[MISSING] => idtac "Missing:" A  
-| ?T => first [unify T B; idtac "Type: ok" | idtac "Type: wrong - should be (" B ")"]  
-end.  
+Module Check.
 
-Ltac print_manual_grade A :=  
-first [  
-match eval compute in A with  
-| ?T => idtac "Score:" T  
-end  
-| idtac "Score: Ungraded"].  
+Ltac check_type A B :=
+    match type of A with
+    | context[MISSING] => idtac "Missing:" A
+    | ?T => first [unify T B; idtac "Type: ok" | idtac "Type: wrong - should be (" B ")"]
+    end.
+
+Ltac print_manual_grade A :=
+    match eval compute in A with
+    | Some (_ ?S ?C) =>
+        idtac "Score:"  S;
+        match eval compute in C with
+          | ""%string => idtac "Comment: None"
+          | _ => idtac "Comment:" C
+        end
+    | None =>
+        idtac "Score: Ungraded";
+        idtac "Comment: None"
+    end.
 
 End Check.
 
-Require Import Logic.
+From LF Require Import Logic.
 Import Check.
 
 Goal True.
@@ -78,7 +86,7 @@ idtac " ".
 idtac "#> Manually graded: double_neg_inf".
 idtac "Advanced".
 idtac "Possible points: 2".
-print_manual_grade score_double_neg_inf.
+print_manual_grade manual_grade_for_double_neg_inf.
 idtac " ".
 
 idtac "-------------------  contrapositive  --------------------".
@@ -111,7 +119,7 @@ idtac " ".
 idtac "#> Manually graded: informal_not_PNP".
 idtac "Advanced".
 idtac "Possible points: 1".
-print_manual_grade score_informal_not_PNP.
+print_manual_grade manual_grade_for_informal_not_PNP.
 idtac " ".
 
 idtac "-------------------  or_distributes_over_and  --------------------".
@@ -256,27 +264,27 @@ Print Assumptions orb_true_iff.
 Goal True.
 idtac " ".
 
-idtac "-------------------  beq_nat_false_iff  --------------------".
+idtac "-------------------  eqb_neq  --------------------".
 idtac " ".
 
-idtac "#> beq_nat_false_iff".
+idtac "#> eqb_neq".
 idtac "Possible points: 1".
-check_type @beq_nat_false_iff ((forall x y : nat, beq_nat x y = false <-> x <> y)).
+check_type @eqb_neq ((forall x y : nat, (x =? y) = false <-> x <> y)).
 idtac "Assumptions:".
 Abort.
-Print Assumptions beq_nat_false_iff.
+Print Assumptions eqb_neq.
 Goal True.
 idtac " ".
 
-idtac "-------------------  beq_list  --------------------".
+idtac "-------------------  eqb_list  --------------------".
 idtac " ".
 
-idtac "#> beq_list".
+idtac "#> eqb_list".
 idtac "Possible points: 3".
-check_type @beq_list ((forall A : Type, (A -> A -> bool) -> list A -> list A -> bool)).
+check_type @eqb_list ((forall A : Type, (A -> A -> bool) -> list A -> list A -> bool)).
 idtac "Assumptions:".
 Abort.
-Print Assumptions beq_list.
+Print Assumptions eqb_list.
 Goal True.
 idtac " ".
 
@@ -326,4 +334,60 @@ idtac " ".
 
 idtac "Max points - standard: 43".
 idtac "Max points - advanced: 49".
+idtac "".
+idtac "********** Summary **********".
+idtac "".
+idtac "********** Standard **********".
+idtac "---------- and_exercise ---------".
+Print Assumptions and_exercise.
+idtac "---------- and_assoc ---------".
+Print Assumptions and_assoc.
+idtac "---------- mult_eq_0 ---------".
+Print Assumptions mult_eq_0.
+idtac "---------- or_commut ---------".
+Print Assumptions or_commut.
+idtac "---------- contrapositive ---------".
+Print Assumptions contrapositive.
+idtac "---------- not_both_true_and_false ---------".
+Print Assumptions not_both_true_and_false.
+idtac "---------- or_distributes_over_and ---------".
+Print Assumptions or_distributes_over_and.
+idtac "---------- dist_not_exists ---------".
+Print Assumptions dist_not_exists.
+idtac "---------- dist_exists_or ---------".
+Print Assumptions dist_exists_or.
+idtac "---------- In_map_iff ---------".
+Print Assumptions In_map_iff.
+idtac "---------- In_app_iff ---------".
+Print Assumptions In_app_iff.
+idtac "---------- All ---------".
+Print Assumptions All.
+idtac "---------- combine_odd_even ---------".
+Print Assumptions combine_odd_even.
+idtac "---------- tr_rev_correct ---------".
+Print Assumptions tr_rev_correct.
+idtac "---------- evenb_double_conv ---------".
+Print Assumptions evenb_double_conv.
+idtac "---------- andb_true_iff ---------".
+Print Assumptions andb_true_iff.
+idtac "---------- orb_true_iff ---------".
+Print Assumptions orb_true_iff.
+idtac "---------- eqb_neq ---------".
+Print Assumptions eqb_neq.
+idtac "---------- eqb_list ---------".
+Print Assumptions eqb_list.
+idtac "---------- forallb_true_iff ---------".
+Print Assumptions forallb_true_iff.
+idtac "---------- excluded_middle_irrefutable ---------".
+Print Assumptions excluded_middle_irrefutable.
+idtac "".
+idtac "********** Advanced **********".
+idtac "---------- double_neg_inf ---------".
+idtac "MANUAL".
+idtac "---------- informal_not_PNP ---------".
+idtac "MANUAL".
+idtac "---------- not_exists_dist ---------".
+Print Assumptions not_exists_dist.
 Abort.
+
+(* Wed Jan 9 12:02:13 EST 2019 *)

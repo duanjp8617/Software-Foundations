@@ -36,7 +36,7 @@
 
 <div class="paragraph"> </div>
 
-<a name="lab367"></a><h1 class="section">Basic Extraction</h1>
+<a name="lab390"></a><h1 class="section">Basic Extraction</h1>
 
 <div class="paragraph"> </div>
 
@@ -52,7 +52,7 @@
 <div class="code code-tight">
 
 <span class="id" type="keyword">Require</span> <span class="id" type="var">Coq.extraction.Extraction</span>.<br/>
-<span class="id" type="var">Extraction</span> <span class="id" type="var">Language</span> <span class="id" type="var">Ocaml</span>.<br/>
+<span class="id" type="var">Extraction</span> <span class="id" type="var">Language</span> <span class="id" type="var">OCaml</span>.<br/>
 </div>
 
 <div class="doc">
@@ -61,9 +61,10 @@ Now we load up the Coq environment with some definitions, either
 </div>
 <div class="code code-tight">
 
-<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Coq.Arith.Arith</span>.<br/>
-<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Coq.Arith.EqNat</span>.<br/>
-<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">ImpCEvalFun</span>.<br/>
+<span class="id" type="var">From</span> <span class="id" type="var">Coq</span> <span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Arith.Arith</span>.<br/>
+<span class="id" type="var">From</span> <span class="id" type="var">Coq</span> <span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Init.Nat</span>.<br/>
+<span class="id" type="var">From</span> <span class="id" type="var">Coq</span> <span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Arith.EqNat</span>.<br/>
+<span class="id" type="var">From</span> <span class="id" type="var">LF</span> <span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">ImpCEvalFun</span>.<br/>
 </div>
 
 <div class="doc">
@@ -83,7 +84,7 @@ When Coq processes this command, it generates a file <span class="inlinecode"><s
 </div>
 
 <div class="doc">
-<a name="lab368"></a><h1 class="section">Controlling Extraction of Specific Types</h1>
+<a name="lab391"></a><h1 class="section">Controlling Extraction of Specific Types</h1>
 
 <div class="paragraph"> </div>
 
@@ -127,7 +128,7 @@ We can also extract defined constants to specific OCaml terms or
 
 <span class="id" type="var">Extract</span> <span class="id" type="var">Constant</span> <span class="id" type="var">plus</span> ⇒ "( + )".<br/>
 <span class="id" type="var">Extract</span> <span class="id" type="var">Constant</span> <span class="id" type="var">mult</span> ⇒ "( * )".<br/>
-<span class="id" type="var">Extract</span> <span class="id" type="var">Constant</span> <span class="id" type="var">beq_nat</span> ⇒ "( = )".<br/>
+<span class="id" type="var">Extract</span> <span class="id" type="var">Constant</span> <span class="id" type="var">eqb</span> ⇒ "( = )".<br/>
 </div>
 
 <div class="doc">
@@ -156,7 +157,7 @@ Have a look at the file <span class="inlinecode"><span class="id" type="var">imp
 </div>
 
 <div class="doc">
-<a name="lab369"></a><h1 class="section">A Complete Example</h1>
+<a name="lab392"></a><h1 class="section">A Complete Example</h1>
 
 <div class="paragraph"> </div>
 
@@ -195,11 +196,10 @@ The extraction is the same as always.
 </div>
 <div class="code code-tight">
 
-<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Imp</span>.<br/>
-<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">ImpParser</span>.<br/><hr class='doublespaceincode'/>
-<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Maps</span>.<br/>
-<span class="id" type="keyword">Definition</span> <span class="id" type="var">empty_state</span> := { <span style="font-size: 80%;"><span style="letter-spacing:-.1em;">-</span><span style="letter-spacing:-.1em;">-</span>&gt;</span> 0 }.<br/>
-<span class="id" type="var">Extraction</span> "imp.ml" <span class="id" type="var">empty_state</span> <span class="id" type="var">ceval_step</span> <span class="id" type="var">parse</span>.<br/>
+<span class="id" type="var">From</span> <span class="id" type="var">LF</span> <span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Imp</span>.<br/>
+<span class="id" type="var">From</span> <span class="id" type="var">LF</span> <span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">ImpParser</span>.<br/><hr class='doublespaceincode'/>
+<span class="id" type="var">From</span> <span class="id" type="var">LF</span> <span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Maps</span>.<br/>
+<span class="id" type="var">Extraction</span> "imp.ml" <span class="id" type="var">empty_st</span> <span class="id" type="var">ceval_step</span> <span class="id" type="var">parse</span>.<br/>
 </div>
 
 <div class="doc">
@@ -219,7 +219,7 @@ Now let's run our generated Imp evaluator.  First, have a look at
 </div>
 
 <div class="doc">
-<a name="lab370"></a><h1 class="section">Discussion</h1>
+<a name="lab393"></a><h1 class="section">Discussion</h1>
 
 <div class="paragraph"> </div>
 
@@ -231,13 +231,17 @@ Now let's run our generated Imp evaluator.  First, have a look at
 </div>
 
 <div class="doc">
-<a name="lab371"></a><h1 class="section">Going Further</h1>
+<a name="lab394"></a><h1 class="section">Going Further</h1>
 
 <div class="paragraph"> </div>
 
  Further details about extraction can be found in the Extract
     chapter in <i>Verified Functional Algorithms</i> (<i>Software
     Foundations</i> volume 3). 
+</div>
+<div class="code code-tight">
+
+<span class="comment">(*&nbsp;Wed&nbsp;Jan&nbsp;9&nbsp;12:02:46&nbsp;EST&nbsp;2019&nbsp;*)</span><br/>
 </div>
 </div>
 

@@ -1,25 +1,33 @@
 Set Warnings "-notation-overridden,-parsing".
-Require Import ImpCEvalFun.
-Parameter MISSING: Type.   
+From Coq Require Export String.
+From LF Require Import ImpCEvalFun.
 
-Module Check.  
+Parameter MISSING: Type.
 
-Ltac check_type A B :=  
-match type of A with  
-| context[MISSING] => idtac "Missing:" A  
-| ?T => first [unify T B; idtac "Type: ok" | idtac "Type: wrong - should be (" B ")"]  
-end.  
+Module Check.
 
-Ltac print_manual_grade A :=  
-first [  
-match eval compute in A with  
-| ?T => idtac "Score:" T  
-end  
-| idtac "Score: Ungraded"].  
+Ltac check_type A B :=
+    match type of A with
+    | context[MISSING] => idtac "Missing:" A
+    | ?T => first [unify T B; idtac "Type: ok" | idtac "Type: wrong - should be (" B ")"]
+    end.
+
+Ltac print_manual_grade A :=
+    match eval compute in A with
+    | Some (_ ?S ?C) =>
+        idtac "Score:"  S;
+        match eval compute in C with
+          | ""%string => idtac "Comment: None"
+          | _ => idtac "Comment:" C
+        end
+    | None =>
+        idtac "Score: Ungraded";
+        idtac "Comment: None"
+    end.
 
 End Check.
 
-Require Import ImpCEvalFun.
+From LF Require Import ImpCEvalFun.
 Import Check.
 
 Goal True.
@@ -41,7 +49,7 @@ idtac " ".
 
 idtac "#> Manually graded: ceval_step__ceval_inf".
 idtac "Possible points: 4".
-print_manual_grade score_ceval_step__ceval_inf.
+print_manual_grade manual_grade_for_ceval_step__ceval_inf.
 idtac " ".
 
 idtac "-------------------  ceval__ceval_step  --------------------".
@@ -63,4 +71,18 @@ idtac " ".
 
 idtac "Max points - standard: 9".
 idtac "Max points - advanced: 9".
+idtac "".
+idtac "********** Summary **********".
+idtac "".
+idtac "********** Standard **********".
+idtac "---------- pup_to_n ---------".
+Print Assumptions pup_to_n.
+idtac "---------- ceval_step__ceval_inf ---------".
+idtac "MANUAL".
+idtac "---------- ceval__ceval_step ---------".
+Print Assumptions ceval__ceval_step.
+idtac "".
+idtac "********** Advanced **********".
 Abort.
+
+(* Wed Jan 9 12:02:27 EST 2019 *)

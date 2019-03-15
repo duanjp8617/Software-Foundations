@@ -1,25 +1,33 @@
 Set Warnings "-notation-overridden,-parsing".
-Require Import Imp.
-Parameter MISSING: Type.   
+From Coq Require Export String.
+From LF Require Import Imp.
 
-Module Check.  
+Parameter MISSING: Type.
 
-Ltac check_type A B :=  
-match type of A with  
-| context[MISSING] => idtac "Missing:" A  
-| ?T => first [unify T B; idtac "Type: ok" | idtac "Type: wrong - should be (" B ")"]  
-end.  
+Module Check.
 
-Ltac print_manual_grade A :=  
-first [  
-match eval compute in A with  
-| ?T => idtac "Score:" T  
-end  
-| idtac "Score: Ungraded"].  
+Ltac check_type A B :=
+    match type of A with
+    | context[MISSING] => idtac "Missing:" A
+    | ?T => first [unify T B; idtac "Type: ok" | idtac "Type: wrong - should be (" B ")"]
+    end.
+
+Ltac print_manual_grade A :=
+    match eval compute in A with
+    | Some (_ ?S ?C) =>
+        idtac "Score:"  S;
+        match eval compute in C with
+          | ""%string => idtac "Comment: None"
+          | _ => idtac "Comment:" C
+        end
+    | None =>
+        idtac "Score: Ungraded";
+        idtac "Comment: None"
+    end.
 
 End Check.
 
-Require Import Imp.
+From LF Require Import Imp.
 Import Check.
 
 Goal True.
@@ -56,8 +64,8 @@ idtac " ".
 idtac "#> ceval_example2".
 idtac "Possible points: 2".
 check_type @ceval_example2 (
-((X ::= 0;; Y ::= 1;; Z ::= 2) / @Maps.t_empty nat 0 \\
- {X --> 0; Y --> 1; Z --> 2})).
+(empty_st =[ X ::= 0;; Y ::= 1;; Z ::= 2
+ ]=> @Maps.t_update nat (@Maps.t_update nat (X !-> 0) Y 1) Z 2)).
 idtac "Assumptions:".
 Abort.
 Print Assumptions ceval_example2.
@@ -69,7 +77,7 @@ idtac " ".
 
 idtac "#> Manually graded: XtimesYinZ_spec".
 idtac "Possible points: 3".
-print_manual_grade score_XtimesYinZ_spec.
+print_manual_grade manual_grade_for_XtimesYinZ_spec.
 idtac " ".
 
 idtac "-------------------  loop_never_stops  --------------------".
@@ -77,7 +85,7 @@ idtac " ".
 
 idtac "#> loop_never_stops".
 idtac "Possible points: 3".
-check_type @loop_never_stops ((forall st st' : state, ~ loop / st \\ st')).
+check_type @loop_never_stops ((forall st st' : state, ~ st =[ loop ]=> st')).
 idtac "Assumptions:".
 Abort.
 Print Assumptions loop_never_stops.
@@ -101,7 +109,7 @@ idtac " ".
 
 idtac "#> Manually graded: no_whiles_terminating".
 idtac "Possible points: 4".
-print_manual_grade score_no_whiles_terminating.
+print_manual_grade manual_grade_for_no_whiles_terminating.
 idtac " ".
 
 idtac "-------------------  stack_compiler  --------------------".
@@ -110,7 +118,7 @@ idtac " ".
 idtac "#> s_execute1".
 idtac "Possible points: 0.5".
 check_type @s_execute1 (
-(s_execute (@Maps.t_empty nat 0) (@nil nat)
+(s_execute empty_st (@nil nat)
    (SPush 5 :: (SPush 3 :: SPush 1 :: SMinus :: @nil sinstr)%list) =
  (2 :: 5 :: @nil nat)%list)).
 idtac "Assumptions:".
@@ -122,7 +130,7 @@ idtac " ".
 idtac "#> s_execute2".
 idtac "Possible points: 0.5".
 check_type @s_execute2 (
-(s_execute {X --> 3} (3 :: (4 :: @nil nat)%list)
+(s_execute (X !-> 3) (3 :: (4 :: @nil nat)%list)
    (SPush 4 :: (SLoad X :: SMult :: SPlus :: @nil sinstr)%list) =
  (15 :: 4 :: @nil nat)%list)).
 idtac "Assumptions:".
@@ -202,4 +210,40 @@ idtac " ".
 
 idtac "Max points - standard: 24".
 idtac "Max points - advanced: 32".
+idtac "".
+idtac "********** Summary **********".
+idtac "".
+idtac "********** Standard **********".
+idtac "---------- AExp.optimize_0plus_b_sound ---------".
+Print Assumptions AExp.optimize_0plus_b_sound.
+idtac "---------- AExp.beval_iff_bevalR ---------".
+Print Assumptions AExp.beval_iff_bevalR.
+idtac "---------- ceval_example2 ---------".
+Print Assumptions ceval_example2.
+idtac "---------- XtimesYinZ_spec ---------".
+idtac "MANUAL".
+idtac "---------- loop_never_stops ---------".
+Print Assumptions loop_never_stops.
+idtac "---------- no_whiles_eqv ---------".
+Print Assumptions no_whiles_eqv.
+idtac "---------- no_whiles_terminating ---------".
+idtac "MANUAL".
+idtac "---------- s_execute1 ---------".
+Print Assumptions s_execute1.
+idtac "---------- s_execute2 ---------".
+Print Assumptions s_execute2.
+idtac "---------- s_compile1 ---------".
+Print Assumptions s_compile1.
+idtac "".
+idtac "********** Advanced **********".
+idtac "---------- s_compile_correct ---------".
+Print Assumptions s_compile_correct.
+idtac "---------- BreakImp.break_ignore ---------".
+Print Assumptions BreakImp.break_ignore.
+idtac "---------- BreakImp.while_continue ---------".
+Print Assumptions BreakImp.while_continue.
+idtac "---------- BreakImp.while_stops_on_break ---------".
+Print Assumptions BreakImp.while_stops_on_break.
 Abort.
+
+(* Wed Jan 9 12:02:24 EST 2019 *)
