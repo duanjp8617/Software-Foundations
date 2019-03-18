@@ -709,13 +709,18 @@ Fixpoint exp (base power : nat) : nat :=
 
     Translate this into Coq. *)
 
-Fixpoint factorial (n:nat) : nat
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint factorial (n:nat) : nat :=
+  match n with
+  | O => S O
+  | S n' => mult (S n') (factorial n')
+  end.
+
+  
 
 Example test_factorial1:          (factorial 3) = 6.
-(* FILL IN HERE *) Admitted.
+Proof. simpl. reflexivity. Qed. 
 Example test_factorial2:          (factorial 5) = (mult 10 12).
-(* FILL IN HERE *) Admitted.
+Proof. simpl. reflexivity. Qed.
 (** [] *)
 
 (** Again, we can make numerical expressions easier to read and write
@@ -802,17 +807,24 @@ Proof. simpl. reflexivity.  Qed.
     function.  (It can be done with just one previously defined
     function, but you can use two if you need to.) *)
 
-Definition ltb (n m : nat) : bool
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition ltb (n m : nat) : bool :=
+  match eqb n m with
+  | true => false
+  | false => (match leb n m with
+              | true => true
+              | false => false
+              end)
+  end.
+
 
 Notation "x <? y" := (ltb x y) (at level 70) : nat_scope.
 
 Example test_ltb1:             (ltb 2 2) = false.
-(* FILL IN HERE *) Admitted.
+Proof. simpl. reflexivity. Qed.
 Example test_ltb2:             (ltb 2 4) = true.
-(* FILL IN HERE *) Admitted.
+Proof. simpl. reflexivity. Qed.
 Example test_ltb3:             (ltb 4 2) = false.
-(* FILL IN HERE *) Admitted.
+Proof. simpl. reflexivity. Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -895,11 +907,11 @@ Proof.
 
 Theorem plus_1_l : forall n:nat, 1 + n = S n.
 Proof.
-  intros n. reflexivity.  Qed.
+  intros n. simpl. reflexivity.  Qed.
 
 Theorem mult_0_l : forall n:nat, 0 * n = 0.
 Proof.
-  intros n. reflexivity.  Qed.
+  intros n. simpl. reflexivity.  Qed.
 
 (** The [_l] suffix in the names of these theorems is
     pronounced "on the left." *)
@@ -941,7 +953,7 @@ Proof.
   (* move the hypothesis into the context: *)
   intros H.
   (* rewrite the goal using the hypothesis: *)
-  rewrite -> H.
+  rewrite <- H.
   reflexivity.  Qed.
 
 (** The first line of the proof moves the universally quantified
@@ -964,8 +976,14 @@ Proof.
 Theorem plus_id_exercise : forall n m o : nat,
   n = m -> m = o -> n + m = m + o.
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  intros n m o.
+  intros H1 H2.
+  rewrite -> H1.
+  rewrite <- H2.
+  reflexivity.
+Qed.
+
+  (** [] *)
 
 (** The [Admitted] command tells Coq that we want to skip trying
     to prove this theorem and just accept it as a given.  This can be
@@ -996,7 +1014,10 @@ Theorem mult_S_1 : forall n m : nat,
   m = S n ->
   m * (1 + n) = m * m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  rewrite -> plus_1_l.
+  rewrite <- H.
+  reflexivity. Qed.
 
   (* (N.b. This proof can actually be completed with tactics other than
      [rewrite], but please do use [rewrite] for the sake of the exercise.) 
@@ -1224,15 +1245,26 @@ Qed.
 Theorem andb_true_elim2 : forall b c : bool,
   andb b c = true -> c = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  intros [] [].
+  - intros. reflexivity.
+  - simpl. intros. rewrite -> H. reflexivity.
+  - intros. reflexivity.
+  - simpl. intros. rewrite -> H. reflexivity.
+Qed.
+    (** [] *)
 
 (** **** Exercise: 1 star, standard (zero_nbeq_plus_1)  *)
 Theorem zero_nbeq_plus_1 : forall n : nat,
   0 =? (n + 1) = false.
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  intros.
+  destruct n as [| n'] eqn:E.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+    
+  (** [] *)
 
 (* ================================================================= *)
 (** ** More on Notation (Optional) *)
@@ -1316,6 +1348,14 @@ Fixpoint plus' (n : nat) (m : nat) : nat :=
     out your solution so that it doesn't cause Coq to reject the whole
     file!) *)
 
+(*
+Fixpoint to_five (n : nat) (m : nat) : nat :=
+  match (n <? 5) with
+  | false => m
+  | true => to_five (S n) (S m)
+  end.
+*)
+
 (* FILL IN HERE 
 
     [] *)
@@ -1338,7 +1378,12 @@ Theorem identity_fn_applied_twice :
   (forall (x : bool), f x = x) ->
   forall (b : bool), f (f b) = b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros f H b.
+  rewrite -> H.
+  rewrite -> H.
+  reflexivity.
+Qed.
+
 
 (** [] *)
 
@@ -1348,7 +1393,20 @@ Proof.
     to the previous one but where the second hypothesis says that the
     function [f] has the property that [f x = negb x]. *)
 
-(* FILL IN HERE *)
+Theorem negation_fn_applied_twice :
+  forall (f : bool -> bool),
+    (forall (x : bool), f x = negb x) ->
+    forall (b : bool), f (f b) = b.
+Proof.
+  intros f H b.
+  rewrite -> H.
+  rewrite -> H.
+  destruct b as [].
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+
 (* The [Import] statement on the next line tells Coq to use the
    standard library String module.  We'll use strings more in later
    chapters, but for the moment we just need syntax for literal
@@ -1371,7 +1429,15 @@ Theorem andb_eq_orb :
   (andb b c = orb b c) ->
   b = c.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros [] [].
+  - simpl. intros. reflexivity.
+  - simpl. intros. rewrite -> H. reflexivity.
+  - simpl. intros. rewrite -> H. reflexivity.
+  - simpl. intros. reflexivity.
+Qed.
+
+    
+    
 
 (** [] *)
 
@@ -1410,11 +1476,21 @@ Inductive bin : Type :=
         for binary numbers, and a function [bin_to_nat] to convert
         binary numbers to unary numbers. *)
 
-Fixpoint incr (m:bin) : bin
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint incr (m:bin) : bin :=
+  match m with
+  | Z => B Z
+  | A n' => B n'
+  | B n' => A (incr n')
+  end.
 
-Fixpoint bin_to_nat (m:bin) : nat
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+                          
+
+Fixpoint bin_to_nat (m:bin) : nat :=
+  match m with
+  | Z => 0
+  | A n' => 2 * (bin_to_nat n')
+  | B n' => 2 * (bin_to_nat n') + 1
+  end.
 
 (**    (b) Write five unit tests [test_bin_incr1], [test_bin_incr2], etc.
         for your increment and binary-to-unary functions.  (A "unit
@@ -1424,7 +1500,12 @@ Fixpoint bin_to_nat (m:bin) : nat
         then converting it to unary should yield the same result as
         first converting it to unary and then incrementing. *)
 
-(* FILL IN HERE *)
+Example test_bin_incr1 : bin_to_nat (incr (incr (incr Z))) = 3.
+Proof. simpl. reflexivity. Qed.
+
+Example test_bin_incr2 : bin_to_nat (incr (incr (incr (incr Z)))) = 4.
+Proof. simpl. reflexivity. Qed.
+
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_binary : option (nat*string) := None.
