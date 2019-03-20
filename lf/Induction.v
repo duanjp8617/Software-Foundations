@@ -262,7 +262,7 @@ Theorem evenb_S : forall n : nat,
 Proof.
   induction n as [| n' IHn'].
   - simpl. reflexivity.
-  - rewrite -> IHn'. simpl. 
+  - rewrite -> IHn'. simpl. rewrite -> negb_involutive. reflexivity.
 (** [] *)
 
 (** **** Exercise: 1 star, standard (destruct_induction)  
@@ -503,17 +503,55 @@ Definition manual_grade_for_plus_comm_informal : option (nat*string) := None.
 Theorem plus_swap : forall n m p : nat,
   n + (m + p) = m + (n + p).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  rewrite -> plus_assoc.
+  assert (H: n + m = m + n). rewrite -> plus_comm. reflexivity.
+  rewrite -> H.
+  rewrite -> plus_assoc.
+  reflexivity.
+Qed.
 
 (** Now prove commutativity of multiplication.  (You will probably
     need to define and prove a separate subsidiary theorem to be used
     in the proof of this one.  You may find that [plus_swap] comes in
     handy.) *)
 
-Theorem mult_comm : forall m n : nat,
-  m * n = n * m.
+Theorem mult_comm_helper : forall m n : nat,
+    m + m * n = m * (S n).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction m as [| m' IHm'].
+  -
+    simpl. reflexivity.
+  -
+    simpl. rewrite -> plus_swap. rewrite -> IHm'.
+    reflexivity.
+Qed.
+
+Theorem mult_comm : forall m n : nat,
+    m * n = n * m.
+Proof.
+  intros.
+  induction n as [| n' IHn'].
+  -
+    (* n = 0 *)
+    simpl.
+    assert (H: m * 0 = 0).
+    {
+      induction m as [| m' IHm'].
+      * reflexivity.
+      * simpl. rewrite -> IHm'. reflexivity.
+    }
+    rewrite -> H. reflexivity.
+  -
+    (* n = S n' *)
+    simpl.
+    rewrite <- IHn'.
+    rewrite -> mult_comm_helper.
+    reflexivity.
+Qed.
+
+        
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (more_exercises)  
@@ -531,31 +569,64 @@ Check leb.
 Theorem leb_refl : forall n:nat,
   true = (n <=? n).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction n as [| n' IHn'].
+  -
+    simpl. reflexivity.
+  -
+    simpl. rewrite -> IHn'. reflexivity.
+Qed.
 
 Theorem zero_nbeq_S : forall n:nat,
   0 =? (S n) = false.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction n as [| n' IHn'].
+  -
+    simpl. reflexivity.
+  -
+    simpl. reflexivity.
+Qed.
 
 Theorem andb_false_r : forall b : bool,
   andb b false = false.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros [].
+  -
+    reflexivity.
+  -
+    reflexivity.
+Qed.
 
 Theorem plus_ble_compat_l : forall n m p : nat,
   n <=? m = true -> (p + n) <=? (p + m) = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction p as [| p' IHp'].
+  -
+    simpl. rewrite -> H. reflexivity.
+  -
+    simpl. rewrite -> IHp'. reflexivity.
+Qed.
 
 Theorem S_nbeq_0 : forall n:nat,
   (S n) =? 0 = false.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction n as [| n' IHn'].
+  -
+    reflexivity.
+  -
+    simpl. reflexivity.
+Qed.
 
 Theorem mult_1_l : forall n:nat, 1 * n = n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction n as [| n' IHn'].
+  -
+    reflexivity.
+  -
+    simpl. rewrite <- plus_n_O. reflexivity.
+Qed.
 
 Theorem all3_spec : forall b c : bool,
     orb
@@ -564,13 +635,48 @@ Theorem all3_spec : forall b c : bool,
                (negb c))
   = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros [] [].
+  -
+    reflexivity.
+  -
+    reflexivity.
+  -
+    reflexivity.
+  -
+    reflexivity.
+Qed.
+
 
 Theorem mult_plus_distr_r : forall n m p : nat,
   (n + m) * p = (n * p) + (m * p).
-Proof.
-  (* FILL IN HERE *) Admitted.
-
+Proof.  
+  intros.
+  induction p as [| p' IHp'].
+  -
+    rewrite -> mult_0_r.
+    assert (H1: n * 0 = 0).
+    {
+      rewrite -> mult_0_r.
+      reflexivity.
+    }
+    rewrite -> H1.
+    assert (H2: m * 0 = 0).
+    {
+      rewrite -> mult_0_r.
+      reflexivity.
+    }
+    rewrite -> H2.
+    reflexivity.
+  -
+    rewrite -> mult_comm.
+    simpl.
+    rewrite -> plus_comm.
+    rewrite -> plus_swap.
+    rewrite -> mult_comm.
+    rewrite -> IHp'.
+    rewrite -> plus_swap.
+    rewrite -> plus_assoc.
+    rewrite -> mult_comm_helper. 
 Theorem mult_assoc : forall n m p : nat,
   n * (m * p) = (n * m) * p.
 Proof.
