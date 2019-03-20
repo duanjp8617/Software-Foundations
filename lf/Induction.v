@@ -782,6 +782,65 @@ Qed.
     definitions to make the property easier to prove, feel free to
     do so! *)
 
+Inductive bin : Type :=
+  | Z
+  | A (n : bin)
+  | B (n : bin).
+
+Fixpoint incr (m:bin) : bin :=
+  match m with
+  | Z => B Z
+  | A n' => B n'
+  | B n' => A (incr n')
+  end.
+
+Fixpoint bin_to_nat (m:bin) : nat :=
+  match m with
+  | Z => 0
+  | A n' => 2 * (bin_to_nat n')
+  | B n' => 2 * (bin_to_nat n') + 1
+  end.
+
+Theorem binary_commute: forall b : bin, bin_to_nat (incr b) = S (bin_to_nat b).
+Proof.
+  assert(Haux: forall n : nat, n + 1 = S n).
+  {
+    intros.
+    induction n as [|n' IHn'].
+    -
+      reflexivity.
+    -
+      simpl. rewrite -> IHn'.
+      reflexivity.
+  }
+  induction b as [|a' IHa'| b' IHb'].
+  -
+    simpl.
+    reflexivity.
+  -
+    simpl.
+    replace (bin_to_nat a' + 0) with (bin_to_nat a').
+    {
+      rewrite -> Haux.
+      reflexivity.
+    }
+    rewrite <- plus_n_O.
+    reflexivity.
+  -
+    simpl.
+    rewrite <- plus_n_O.
+    replace (bin_to_nat b' + 0) with (bin_to_nat b').
+    {
+      rewrite -> IHb'.
+      simpl.
+      rewrite <- plus_assoc.
+      rewrite -> Haux.
+      reflexivity.
+    }
+    rewrite <- plus_n_O.
+    reflexivity.
+Qed.
+      
 (* FILL IN HERE *)
 
 (* Do not modify the following line: *)
@@ -797,8 +856,10 @@ Definition manual_grade_for_binary_commute : option (nat*string) := None.
     (a) First, write a function to convert natural numbers to binary
         numbers. *)
 
-Fixpoint nat_to_bin (n:nat) : bin
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint nat_to_bin (n:nat) : bin :=
+  match n with
+  | O => Z
+  | S n' => 
 
 (** Prove that, if we start with any [nat], convert it to binary, and
     convert it back, we get the same [nat] we started with.  (Hint: If
