@@ -670,17 +670,40 @@ Proof.
   -
     rewrite -> mult_comm.
     simpl.
-    rewrite -> plus_comm.
-    rewrite -> plus_swap.
+    assert (H1: n + m + p' * (n + m) = n + (m + p' * (n + m))).
+    {
+      rewrite <- plus_assoc.
+      reflexivity.
+    }
+    rewrite -> H1.
     rewrite -> mult_comm.
     rewrite -> IHp'.
-    rewrite -> plus_swap.
+    assert (m + (n * p' + m * p') = n * p' + m * S p').
+    {
+      rewrite -> plus_swap.
+      rewrite -> mult_comm_helper.
+      reflexivity.
+    }
+    rewrite -> H.
     rewrite -> plus_assoc.
-    rewrite -> mult_comm_helper. 
+    rewrite -> mult_comm_helper.
+    reflexivity.
+Qed.
+            
 Theorem mult_assoc : forall n m p : nat,
   n * (m * p) = (n * m) * p.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction n as [| n' IHn'].
+  -
+    reflexivity.
+  -
+    simpl.
+    rewrite -> IHn'.
+    rewrite -> mult_plus_distr_r.
+    reflexivity.
+Qed.
+  
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (eqb_refl)  
@@ -694,7 +717,15 @@ Proof.
 Theorem eqb_refl : forall n : nat,
   true = (n =? n).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction n as [| n' IHn'].
+  -
+    reflexivity.
+  -
+    simpl.
+    rewrite <- IHn'.
+    reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (plus_swap')  
@@ -711,7 +742,18 @@ Proof.
 Theorem plus_swap' : forall n m p : nat,
   n + (m + p) = m + (n + p).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  rewrite -> plus_assoc.
+  replace (n + m) with (m + n).
+  {
+    rewrite <- plus_assoc.
+    reflexivity.
+  }
+  rewrite -> plus_comm.
+  reflexivity.
+Qed.
+
+  
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, recommended (binary_commute)  
