@@ -859,7 +859,9 @@ Definition manual_grade_for_binary_commute : option (nat*string) := None.
 Fixpoint nat_to_bin (n:nat) : bin :=
   match n with
   | O => Z
-  | S n' => 
+  | S n' => incr (nat_to_bin n')
+  end.
+
 
 (** Prove that, if we start with any [nat], convert it to binary, and
     convert it back, we get the same [nat] we started with.  (Hint: If
@@ -869,7 +871,16 @@ Fixpoint nat_to_bin (n:nat) : bin :=
 
 Theorem nat_bin_nat : forall n, bin_to_nat (nat_to_bin n) = n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction n as [| n' IHn'].
+  -
+    reflexivity.
+  -
+    simpl.
+    rewrite -> binary_commute.
+    rewrite -> IHn'.
+    reflexivity.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_binary_inverse_a : option (nat*string) := None.
@@ -880,7 +891,10 @@ Definition manual_grade_for_binary_inverse_a : option (nat*string) := None.
         the same number we started with.  However, this is not the
         case!  Explain (in a comment) what the problem is. *)
 
-(* FILL IN HERE *)
+(* For the binary number "A Z", which is literally zero. If 
+   we convert it to natural number, it would be 0. If we convert 0 back,
+   we would get binary number "Z", which would not equal to the 
+   original "A Z". *)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_binary_inverse_b : option (nat*string) := None.
@@ -897,7 +911,92 @@ Definition manual_grade_for_binary_inverse_b : option (nat*string) := None.
         proof -- that will allow the main proof to make progress.) Don't
         define thi using nat_to_bin and bin_to_nat! *)
 
-(* FILL IN HERE *)
+Fixpoint check_all_a (b : bin) : bool :=
+  match b with
+  | A Z => true
+  | A b' => check_all_a b'
+  | _ => false
+  end.
+
+Fixpoint normalize (b : bin) : bin :=
+  match b with
+  | Z => Z
+  | A b' =>
+    match check_all_a b with
+    | true => Z
+    | false => A (normalize b')
+    end
+  | B b' =>
+    match check_all_a b' with
+    | true => B Z
+    | false => B (normalize b')
+    end
+  end.
+
+Theorem helper1 : forall b : bin, check_all_a b = true -> bin_to_nat b = 0.
+Proof.
+  intros b.
+  induction b as [| a' IHa' | b' IHb'].
+  -
+    intros. reflexivity.
+  -
+    simpl.
+    destruct a' as [| a'' | b''] eqn:E.
+    +
+      intros. rewrite <- plus_n_O.
+      reflexivity.
+    +
+      intros. rewrite <- plus_n_O.
+      apply IHa' in H.
+      rewrite -> H.
+      reflexivity.
+    +
+      intros. rewrite <- plus_n_O.
+      apply IHa' in H.
+      rewrite -> H.
+      reflexivity.
+  -
+    simpl.
+    intros.
+    discriminate.
+Qed.
+
+Theorem helper2 :
+  forall (b : bin) , check_all_a (A b) = false -> ltb 0 (bin_to_nat (A b)) = true.
+Proof.
+Admitted.
+
+
+Theorem bin_nat_bin : forall b : bin, nat_to_bin (bin_to_nat b) = normalize b.
+Proof.
+  intros.
+  induction b as [| a' IHa' | b' IHb'].
+  -
+    reflexivity.
+  -
+    simpl.
+    rewrite <- plus_n_O.
+    destruct a' as [] eqn:E.
+    +
+      reflexivity.
+    +
+      destruct (check_all_a (A b)) as [] eqn:E'.
+      *
+        rewrite <- E in E'.
+        apply helper1 in E'.
+        rewrite -> E in E'.
+        rewrite -> E'.
+        simpl.
+        reflexivity.
+      *
+        apply helper2 in E'.
+        
+        
+    
+      
+    
+      
+      
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_binary_inverse_c : option (nat*string) := None.
