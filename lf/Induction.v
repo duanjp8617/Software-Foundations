@@ -263,6 +263,8 @@ Proof.
   induction n as [| n' IHn'].
   - simpl. reflexivity.
   - rewrite -> IHn'. simpl. rewrite -> negb_involutive. reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 1 star, standard (destruct_induction)  
@@ -911,8 +913,10 @@ Definition manual_grade_for_binary_inverse_b : option (nat*string) := None.
         proof -- that will allow the main proof to make progress.) Don't
         define thi using nat_to_bin and bin_to_nat! *)
 
+(* My solution to this problem is quite tricky. It requires using tactics
+   that are not taught until Induction.v section. *)
 
-
+(* This checks whether a binary number has the form of A (A (A (A ..(A Z)))) *)
 Fixpoint check_all_a (b : bin) : bool :=
   match b with
   | A Z => true
@@ -920,6 +924,9 @@ Fixpoint check_all_a (b : bin) : bool :=
   | _ => false
   end.
 
+(* Check whether there are mutiple As preceding the last Z. If there is
+   , then we can replace consecutive As with Z with a single Z. And that
+   finish the normalization process. *)
 Fixpoint normalize (b : bin) : bin :=
   match b with
   | Z => Z
@@ -935,6 +942,11 @@ Fixpoint normalize (b : bin) : bin :=
     end
   end.
 
+(* Here goes the definition of the main theorem. There are seven preceding lemmas that 
+   are used for proving the main theorem. *)
+
+(* If check_all_a b = true, the binary number b has the form of A (A ... (A Z)). Then
+   bin_to_nat b = 0. (After converting to natural number, it is basically 2*2*2...*0) *)
 Theorem helper1 : forall b : bin, check_all_a b = true -> bin_to_nat b = 0.
 Proof.
   intros b.
@@ -963,6 +975,7 @@ Proof.
     discriminate.
 Qed.
 
+(* By the definition of check_all_a, we have the following lemma. *)
 Theorem helper2_1 :
   forall (b : bin), check_all_a (A b) = false -> check_all_a b = false.
 Proof.
@@ -977,6 +990,7 @@ Proof.
     apply H.
 Qed.
 
+(* By the definition of natural number addition, we have the following lemma. *)
 Theorem helper2_2 :
   forall (n : nat), (0 <? n + n) = true -> (0 <? (n + n) + (n + n)) = true.
 Proof.
@@ -989,6 +1003,7 @@ Proof.
     reflexivity.
 Qed.
 
+(* If check_all_a (A b) = false, then b has Bs before reaching Z. Converting A b to natural number yields a number larger tha 0. *)
 Theorem helper2 :
   forall (b : bin) , check_all_a (A b) = false -> ltb 0 (bin_to_nat (A b)) = true.
 Proof.
@@ -1024,6 +1039,7 @@ Proof.
     reflexivity.
 Qed.
 
+(* If n is larger than 0, then n + n = 2 * n *)
 Theorem helper3 :
   forall (n : nat), 0 <? n = true -> nat_to_bin (n + n) = A (nat_to_bin n).
 Proof.
@@ -1050,6 +1066,8 @@ Proof.
       reflexivity.
 Qed.
 
+(* By dinifition of bin_to_nat, B b is definitely larger than 0 after converting to 0. 
+   We place the proposition here only to simplify the usage. *)
 Theorem helper4 :
   forall (b : bin) , check_all_a (B b) = false -> ltb 0 (bin_to_nat (B b)) = true.
 Proof.
@@ -1060,6 +1078,7 @@ Proof.
   reflexivity.
 Qed.
 
+(* n + n + 1 = 2*n + 1 *)
 Theorem helper5 :
   forall (n : nat), nat_to_bin (n + n + 1) = B (nat_to_bin n).
 Proof.
@@ -1087,8 +1106,10 @@ Proof.
   intros.
   induction b as [| a' IHa' | b' IHb'].
   -
+    (* b = Z *)
     reflexivity.
   -
+    (* b = A a' *)
     simpl.
     rewrite <- plus_n_O.
     destruct a' as [] eqn:E.
@@ -1096,10 +1117,8 @@ Proof.
       reflexivity.
     +
       destruct (check_all_a (A b)) as [] eqn:E'.
-      *
-        rewrite <- E in E'.
+      *        
         apply helper1 in E'.
-        rewrite -> E in E'.
         rewrite -> E'.
         simpl.
         reflexivity.
@@ -1121,6 +1140,7 @@ Proof.
         rewrite -> IHa'.
         reflexivity.
   -
+    (* b = B b' *)
     simpl.
     rewrite <- plus_n_O.
     destruct (check_all_a b') as [] eqn:E.
