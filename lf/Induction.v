@@ -911,6 +911,8 @@ Definition manual_grade_for_binary_inverse_b : option (nat*string) := None.
         proof -- that will allow the main proof to make progress.) Don't
         define thi using nat_to_bin and bin_to_nat! *)
 
+
+
 Fixpoint check_all_a (b : bin) : bool :=
   match b with
   | A Z => true
@@ -961,11 +963,124 @@ Proof.
     discriminate.
 Qed.
 
+Theorem helper2_1 :
+  forall (b : bin), check_all_a (A b) = false -> check_all_a b = false.
+Proof.
+  intros.
+  simpl in H.
+  destruct b as [|a'|b'].
+  -
+    discriminate.
+  -
+    apply H.
+  -
+    apply H.
+Qed.
+
+Theorem helper2_2 :
+  forall (n : nat), (0 <? n + n) = true -> (0 <? (n + n) + (n + n)) = true.
+Proof.
+  intros.
+  induction n as [| n' IHn'].
+  -
+    simpl in H.
+    discriminate.
+  -
+    reflexivity.
+Qed.
+
 Theorem helper2 :
   forall (b : bin) , check_all_a (A b) = false -> ltb 0 (bin_to_nat (A b)) = true.
 Proof.
-Admitted.
+  intros.
+  induction b as [| a' IHa'| b' IHb'].
+  -
+    simpl in H.
+    discriminate.
+  -
+    apply helper2_1 in H.
+    apply IHa' in H.
+    simpl.
+    rewrite <- plus_n_O.
+    assert (H': bin_to_nat a' + bin_to_nat a' + 0 = bin_to_nat a' + bin_to_nat a').
+    {
+      rewrite <- plus_assoc.
+      rewrite <- plus_n_O.
+      reflexivity.
+    }
+    rewrite -> H'.
+    simpl in H.
+    rewrite <- plus_n_O in H.
+    apply helper2_2 in H.
+    apply H.
+  -
+    simpl.
+    rewrite <- plus_n_O.
+    assert (H': bin_to_nat b' + bin_to_nat b' + 1 = 1 + (bin_to_nat b' + bin_to_nat b')).
+    {
+      apply plus_comm.
+    }
+    rewrite -> H'.
+    reflexivity.
+Qed.
 
+Theorem helper3 :
+  forall (n : nat), 0 <? n = true -> nat_to_bin (n + n) = A (nat_to_bin n).
+Proof.
+  intros.
+  induction n as [|n' IHn'].
+  -
+    discriminate.
+  -
+    simpl.
+    rewrite -> plus_comm.
+    simpl.
+    destruct n' as [|n''] eqn:E.
+    +
+      simpl.
+      reflexivity.
+    +
+      assert(H'': 0 <? S n'' = true).
+      {
+        reflexivity.
+      }
+      apply IHn' in H''.
+      rewrite -> H''.
+      simpl.
+      reflexivity.
+Qed.
+
+Theorem helper4 :
+  forall (b : bin) , check_all_a (B b) = false -> ltb 0 (bin_to_nat (B b)) = true.
+Proof.
+  intros.
+  simpl.
+  rewrite <- plus_n_O.
+  rewrite -> plus_comm.
+  reflexivity.
+Qed.
+
+Theorem helper5 :
+  forall (n : nat), nat_to_bin (n + n + 1) = B (nat_to_bin n).
+Proof.
+  intros.
+  induction n as [| n' IHn'].
+  -
+    simpl.
+    reflexivity.
+  -
+    simpl.
+    rewrite <- plus_assoc.
+    simpl.
+    rewrite -> plus_comm.
+    simpl.
+    rewrite <- plus_assoc.
+    rewrite -> plus_swap.
+    rewrite -> plus_comm.
+    rewrite -> IHn'.
+    simpl.
+    reflexivity.
+Qed.
 
 Theorem bin_nat_bin : forall b : bin, nat_to_bin (bin_to_nat b) = normalize b.
 Proof.
@@ -990,13 +1105,35 @@ Proof.
         reflexivity.
       *
         apply helper2 in E'.
-        
-        
-    
-      
-    
-      
-      
+        apply helper3 in E'.
+        rewrite -> E'.
+        rewrite -> IHa'.
+        reflexivity.
+    +
+      destruct (check_all_a (B b)) as [] eqn:E'.
+      *
+        simpl in E'.
+        discriminate.
+      *
+        apply helper4 in E'.
+        apply helper3 in E'.
+        rewrite -> E'.
+        rewrite -> IHa'.
+        reflexivity.
+  -
+    simpl.
+    rewrite <- plus_n_O.
+    destruct (check_all_a b') as [] eqn:E.
+    +
+      apply helper1 in E.
+      rewrite -> E.
+      simpl.
+      reflexivity.
+    +
+      rewrite -> helper5.
+      rewrite -> IHb'.
+      reflexivity.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_binary_inverse_c : option (nat*string) := None.
