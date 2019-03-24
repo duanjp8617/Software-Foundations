@@ -925,6 +925,13 @@ Fixpoint fold {X Y: Type} (f: X->Y->Y) (l: list X) (b: Y)
   | h :: t => f h (fold f t b)
   end.
 
+Fixpoint fold_left {X Y: Type} (f: Y->X->Y) (l: list X) (b: Y) : Y :=
+  match l with
+  | [] => b
+  | hd :: tl => fold_left f tl (f b hd)
+  end.
+
+
 (** Intuitively, the behavior of the [fold] operation is to
     insert a given binary operator [f] between every pair of elements
     in a given list.  For example, [ fold plus [1;2;3;4] ] intuitively
@@ -944,15 +951,15 @@ Check (fold andb).
 (* ===> fold andb : list bool -> bool -> bool *)
 
 Example fold_example1 :
-  fold mult [1;2;3;4] 1 = 24.
+  fold_left mult [1;2;3;4] 1 = 24.
 Proof. reflexivity. Qed.
 
 Example fold_example2 :
-  fold andb [true;true;false;true] true = false.
+  fold_left andb [true;true;false;true] true = false.
 Proof. reflexivity. Qed.
 
 Example fold_example3 :
-  fold app  [[1];[];[2;3];[4]] [] = [1;2;3;4].
+  fold_left app  [[1];[];[2;3];[4]] [] = [1;2;3;4].
 Proof. reflexivity. Qed.
 
 (** **** Exercise: 1 star, advanced (fold_types_different)  
@@ -963,7 +970,7 @@ Proof. reflexivity. Qed.
     situation where it would be useful for [X] and [Y] to be
     different? *)
 
-(* FILL IN HERE *)
+(* Calculating the total element number of a list of list *)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_fold_types_different : option (nat*string) := None.
@@ -1042,7 +1049,17 @@ Proof. reflexivity. Qed.
 Theorem fold_length_correct : forall X (l : list X),
   fold_length l = length l.
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros.
+  induction l as [| x l' IHl'].
+  -
+    reflexivity.
+  -
+    simpl.
+    rewrite <- IHl'.
+    reflexivity.
+Qed.
+
+  
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (fold_map)  
@@ -1050,8 +1067,22 @@ Proof.
     We can also define [map] in terms of [fold].  Finish [fold_map]
     below. *)
 
-Definition fold_map {X Y: Type} (f: X -> Y) (l: list X) : list Y
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition fold_map {X Y: Type} (f: X -> Y) (l: list X) : list Y :=
+  fold (fun x l => (f x) :: l) l [].
+
+Theorem fold_map_correct : forall X Y (l: list X) (f: X->Y),
+    fold_map f l = map f l.
+Proof.
+  intros.
+  induction l as [| x l' IHl'].
+  -
+    reflexivity.
+  -
+    simpl.
+    rewrite <- IHl'.
+    reflexivity.
+Qed.
+
 
 (** Write down a theorem [fold_map_correct] in Coq stating that
    [fold_map] is correct, and prove it.  (Hint: again, remember that
@@ -1088,8 +1119,8 @@ Definition prod_curry {X Y Z : Type}
     the theorems below to show that the two are inverses. *)
 
 Definition prod_uncurry {X Y Z : Type}
-  (f : X -> Y -> Z) (p : X * Y) : Z
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+           (f : X -> Y -> Z) (p : X * Y) : Z :=
+  f (fst p) (snd p).
 
 (** As a (trivial) example of the usefulness of currying, we can use it
     to shorten one of the examples that we saw above: *)
@@ -1108,13 +1139,20 @@ Theorem uncurry_curry : forall (X Y Z : Type)
                         x y,
   prod_curry (prod_uncurry f) x y = f x y.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  reflexivity.
+Qed.
+
 
 Theorem curry_uncurry : forall (X Y Z : Type)
                         (f : (X * Y) -> Z) (p : X * Y),
   prod_uncurry (prod_curry f) p = f p.
 Proof.
-  (* FILL IN HERE *) Admitted.
+    intros.
+    destruct p.
+    reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced (nth_error_informal)  
