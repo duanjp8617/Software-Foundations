@@ -12,7 +12,7 @@
       strengthening is required); and
     - more details on how to reason by case analysis. *)
 
-Set Warnings "-notation-overridden,-parsing".
+(* Set Warnings "-notation-overridden,-parsing". *)
 From LF Require Export Poly.
 
 (* ################################################################# *)
@@ -986,13 +986,38 @@ Fixpoint split {X Y : Type} (l : list (X*Y))
   end.
 
 (** Prove that [split] and [combine] are inverses in the following
-    sense: *)
+    sense: *)   
 
 Theorem combine_split : forall X Y (l : list (X * Y)) l1 l2,
   split l = (l1, l2) ->
   combine l1 l2 = l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X Y l.
+  induction l as [| p l' IHl'].
+  -
+    intros.
+    injection H.
+    intros.
+    rewrite <- H0. rewrite <- H1.
+    reflexivity.
+  -
+    intros.
+    simpl in H.
+    destruct p.
+    destruct (split l').
+    injection H.
+    intros.
+    rewrite <- H0. rewrite <- H1.
+    simpl.
+    assert (H2: (x0, y0) = (x0, y0)).
+    {
+      reflexivity.
+    }
+    apply IHl' in H2.
+    rewrite -> H2.
+    reflexivity.
+Qed.
+
 (** [] *)
 
 (** The [eqn:] part of the [destruct] tactic is optional: We've chosen
@@ -1068,7 +1093,32 @@ Theorem bool_fn_applied_thrice :
   forall (f : bool -> bool) (b : bool),
   f (f (f b)) = f b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  destruct b as [] eqn:E.
+  -
+    destruct (f true) as [] eqn:E1.
+    +
+      rewrite E1.
+      apply E1.
+    +
+      destruct (f false) as [] eqn:E2.
+      *
+        apply E1.
+      *
+        apply E2.
+  -
+    destruct (f false) as [] eqn:E1.
+    +
+      destruct (f true) as [] eqn:E2.
+      *
+        apply E2.
+      *
+        apply E1.
+    +
+      rewrite E1.
+      apply E1.
+Qed.                  
+      
 (** [] *)
 
 (* ################################################################# *)
