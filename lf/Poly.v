@@ -1218,52 +1218,53 @@ Definition three : cnat := @doit3times.
 (** Successor of a natural number: given a Church numeral [n],
     the successor [succ n] is a function that iterates its
     argument once more than [n]. *)
-Definition succ (n : cnat) : cnat
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition succ (n : cnat) : cnat :=
+  fun X f x => f (n X f x).
 
 Example succ_1 : succ zero = one.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 Example succ_2 : succ one = two.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 Example succ_3 : succ two = three.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 (** [] *)
 
 (** **** Exercise: 1 star, advanced (church_plus)  *)
 
 (** Addition of two natural numbers: *)
-Definition plus (n m : cnat) : cnat
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition plus (n m : cnat) : cnat :=
+  fun X f x => n X f (m X f x).
 
 Example plus_1 : plus zero one = one.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 Example plus_2 : plus two three = plus three two.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 Example plus_3 :
   plus (plus two two) three = plus one (plus three three).
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced (church_mult)  *)
 
 (** Multiplication: *)
-Definition mult (n m : cnat) : cnat
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition mult (n m : cnat) : cnat :=
+  (* fun X f x => n X (fun x => m X f x) x. *)
+  fun X f x => m X (fun x => (plus n zero) X f x) x.
 
 Example mult_1 : mult one one = one.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 Example mult_2 : mult zero (plus three three) = zero.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 Example mult_3 : mult two three = plus three three.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 (** [] *)
 
@@ -1276,17 +1277,35 @@ Proof. (* FILL IN HERE *) Admitted.
     a "Universe inconsistency" error, try iterating over a different
     type.  Iterating over [cnat] itself is usually problematic.) *)
 
-Definition exp (n m : cnat) : cnat
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+(* cnat = forall X : Type, (X -> X) -> X -> X *)
+(*      : Type *)
+
+Definition exp (n m : cnat) : cnat :=
+  (* fun X f x => (m cnat (mult n) one) X f x. 
+     This is the straightforward way, but it causes universe inconsistency. *)
+
+  (* I came up with the following solution by reasoning about exp n zero = one. 
+     Therefore we must use X->X to replace the orignal X. When this expression 
+     expands out, the outer (plus n zero) X ... executes first, which executes inner
+     one n times. This results in exponential computation. *)
+  fun (X:Type) (f:X->X) (x:X) =>
+    (m (X->X) ((plus n zero) X) (fun x => f x)) x.
+                 
 
 Example exp_1 : exp two two = plus two two.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 Example exp_2 : exp three zero = one.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 Example exp_3 : exp three two = plus (mult two (mult two two)) one.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
+
+Definition four : cnat :=
+  fun (X:Type) (f:X->X) (x:X) => f (f (f (f x))).
+
+Example exp_4 : exp four two = mult two (mult two (mult two two)).
+Proof. reflexivity. Qed.
 
 (** [] *)
 
