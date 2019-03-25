@@ -106,12 +106,33 @@ Proof.
     just hypotheses in the context.  Remember that [Search] is
     your friend.) *)
 
+Theorem rev_injective : forall (l1 l2 : list nat), rev l1 = rev l2 -> l1 = l2.
+Proof.
+  intros.
+  assert (H1: rev (rev l1) = l1).
+  {
+    apply rev_involutive.
+  }
+  assert (H2: rev (rev l2) = l2).
+  {
+    apply rev_involutive.
+  }
+  rewrite -> H in H1.
+  rewrite -> H2 in H1.
+  symmetry.
+  apply H1.
+Qed.
+  
 Theorem rev_exercise1 : forall (l l' : list nat),
      l = rev l' ->
      l' = rev l.
 Proof.
   intros l l' H.
   apply rev_injective.
+  rewrite <- H.
+  symmetry.
+  apply rev_involutive.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard, optional (apply_rewrite)  
@@ -180,7 +201,11 @@ Example trans_eq_exercise : forall (n m o p : nat),
      (n + p) = m ->
      (n + p) = (minustwo o).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  rewrite -> H0.
+  apply H.
+Qed.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -277,7 +302,13 @@ Example injection_ex3 : forall (X : Type) (x y z : X) (l j : list X),
   y :: l = x :: j ->
   x = y.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  injection H0.
+  intros.
+  rewrite -> H2.
+  reflexivity.
+Qed.
+
 (** [] *)
 
 (** So much for injectivity of constructors.  What about disjointness?
@@ -349,7 +380,10 @@ Example discriminate_ex3 :
     x :: y :: l = [] ->
     x = z.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  discriminate.
+Qed.
+
 (** [] *)
 
 (** The injectivity of constructors allows us to reason that
@@ -423,8 +457,31 @@ Theorem plus_n_n_injective : forall n m,
      n + n = m + m ->
      n = m.
 Proof.
-  intros n. induction n as [| n'].
-  (* FILL IN HERE *) Admitted.
+  intros n.
+  induction n as [| n'].
+  -
+    simpl.
+    intros.
+    destruct m.
+    +
+      reflexivity.
+    +
+      simpl in H.
+      discriminate.
+  -
+    intros.
+    destruct m.
+    +
+      simpl in H.
+      discriminate.
+    +
+      simpl in H. injection H as H'.
+      rewrite plus_comm in H'. symmetry in H'. rewrite plus_comm in H'.
+      simpl in H'. injection H' as H''.
+      symmetry in H''. apply IHn' in H''.
+      rewrite H''. reflexivity.
+Qed.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -581,7 +638,27 @@ Proof.
 Theorem eqb_true : forall n m,
     n =? m = true -> n = m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n.
+  induction n as [| n' IHn'].
+  -
+    intros.
+    destruct m as [|m'].
+    +
+      reflexivity.
+    +
+      discriminate.
+  -
+    intros m H.
+    destruct m as [|m'].
+    +
+      discriminate.
+    +
+      apply f_equal.
+      apply IHn'.
+      simpl in H.
+      apply H.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced (eqb_true_informal)  
@@ -711,7 +788,26 @@ Theorem nth_error_after_last: forall (n : nat) (X : Type) (l : list X),
      length l = n ->
      nth_error l n = None.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  generalize dependent n.
+  induction l as [| x l' IHl'].
+  -
+    intros.
+    reflexivity.
+  -
+    intros.
+    simpl.
+    destruct n as [|n'].
+    +
+      discriminate.
+    +
+      simpl.
+      simpl in H.
+      injection H as H'.
+      apply IHl' in H'.
+      apply H'.
+Qed.
+
 (** [] *)
 
 (* ################################################################# *)
