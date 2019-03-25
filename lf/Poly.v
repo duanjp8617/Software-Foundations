@@ -4,7 +4,7 @@
    publicly accessible places.  Thank you!! *)
 
 (* Suppress some annoying warnings from Coq: *)
-(* Set Warnings "-notation-overridden,-parsing". *)
+Set Warnings "-notation-overridden,-parsing".
 From LF Require Export Lists.
 
 (* ################################################################# *)

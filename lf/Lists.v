@@ -1115,18 +1115,7 @@ Qed.
 
 Theorem rev_injective : forall (l1 l2 : natlist), rev l1 = rev l2 -> l1 = l2.
 Proof.
-  intros l1.
-  induction l1 as [| n l1' IHl1'].
-  -
-    simpl.
-    intros.
-    rewrite <- test_rev2.
-    rewrite -> H.
-    apply rev_involutive.
-  -
-    intros.
-    simpl in H.
-Abort.    
+Admitted.    
     
 (* FILL IN HERE *)
 

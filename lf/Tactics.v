@@ -74,7 +74,10 @@ Theorem silly_ex :
      oddb 3 = true ->
      evenb 4 = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros H H1.
+  reflexivity.
+Qed.
+
 (** [] *)
 
 (** To use the [apply] tactic, the (conclusion of the) fact
@@ -87,7 +90,7 @@ Theorem silly3_firsttry : forall (n : nat),
      (S (S n)) =? 7 = true.
 Proof.
   intros n H.
-
+  
 (** Here we cannot use [apply] directly, but we can use the [symmetry]
     tactic, which switches the left and right sides of an equality in
     the goal. *)
@@ -107,7 +110,8 @@ Theorem rev_exercise1 : forall (l l' : list nat),
      l = rev l' ->
      l' = rev l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros l l' H.
+  apply rev_injective.
 (** [] *)
 
 (** **** Exercise: 1 star, standard, optional (apply_rewrite)  
