@@ -988,6 +988,7 @@ Proof.
       *
         left. left. apply H.
       *
+        intros.
         apply IHl'' in H.
         destruct H.
         {
@@ -1002,8 +1003,10 @@ Proof.
       simpl.
       intros [].
       *
+        intros.
         destruct H.
       *
+        intros.
         apply H.
     +
       simpl.
@@ -1779,7 +1782,8 @@ Proof.
     +
       simpl in H. right. apply H.
   -
-    intros [].
+    intros.
+    destruct H.
     +
       rewrite -> H. reflexivity.
     +
@@ -2122,7 +2126,17 @@ Qed.
 Theorem excluded_middle_irrefutable: forall (P:Prop),
   ~ ~ (P \/ ~ P).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  unfold not.
+  intros.
+  apply H.
+  right.
+  intros.
+  apply H.
+  left.
+  apply H0.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (not_exists_dist)  
@@ -2143,8 +2157,21 @@ Theorem not_exists_dist :
   forall (X:Type) (P : X -> Prop),
     ~ (exists x, ~ P x) -> (forall x, P x).
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  unfold excluded_middle.
+  unfold not.
+  intros.
+  destruct (H (P x)).
+  -
+    apply H1.
+  -
+    exfalso.
+    apply H0.
+    exists x.
+    apply H1.
+Qed.
+
+    
+    (** [] *)
 
 (** **** Exercise: 5 stars, standard, optional (classical_axioms)  
 
@@ -2169,6 +2196,18 @@ Definition de_morgan_not_and_not := forall P Q:Prop,
 
 Definition implies_to_or := forall P Q:Prop,
   (P->Q) -> (~P\/Q).
+
+Theorem equivalence1: peirce -> double_negation_elimination.
+Proof.
+  unfold double_negation_elimination.
+  unfold peirce.     
+  intros.
+  unfold not in H0.
+  apply (H P False).
+  intros.
+  apply H0 in H1.
+  destruct H1.
+Qed.
 
 (* FILL IN HERE 
 
