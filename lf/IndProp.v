@@ -977,16 +977,17 @@ Inductive R : nat -> nat -> nat -> Prop :=
    | c5 m n o (H : R m n o) : R n m o.
 
 (** - Which of the following propositions are provable?
-      - [R 1 1 2]
-      - [R 2 2 6]
+      - [R 1 1 2] This one
+      - [R 2 2 6] This one not provable
 
     - If we dropped constructor [c5] from the definition of [R],
       would the set of provable propositions change?  Briefly (1
-      sentence) explain your answer.
+      sentence) explain your answer. No, because we can exchange the sequence 
+      when exectuing c2 and c3.
 
     - If we dropped constructor [c4] from the definition of [R],
       would the set of provable propositions change?  Briefly (1
-      sentence) explain your answer.
+      sentence) explain your answer. No, c4 can be constructed from c2 and c3.
 
 (* FILL IN HERE *)
 *)
@@ -1001,12 +1002,76 @@ Definition manual_grade_for_R_provability : option (nat*string) := None.
     Figure out which function; then state and prove this equivalence
     in Coq? *)
 
-Definition fR : nat -> nat -> nat
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition fR : nat -> nat -> nat := fun m n => m + n.
+
+Theorem R_equiv_fR_helper: forall n, R 0 n n.
+Proof.
+  induction n as [|n' IHn'].
+  -
+    apply c1.
+  -
+    apply c3.
+    apply IHn'.
+Qed.
+
 
 Theorem R_equiv_fR : forall m n o, R m n o <-> fR m n = o.
 Proof.
-(* FILL IN HERE *) Admitted.
+  split.
+  -
+    intros.
+    unfold fR.
+    induction H.
+    +
+      reflexivity.
+    +
+      rewrite <- IHR.
+      simpl.
+      reflexivity.
+    +
+      rewrite <- IHR.
+      rewrite -> plus_comm.
+      simpl.
+      rewrite -> plus_comm. reflexivity.
+    +
+      simpl in IHR.
+      injection IHR.
+      intros.
+      rewrite -> plus_comm in H0.
+      simpl. injection H0.
+      intros.
+      rewrite -> plus_comm. apply H1.
+    +
+      rewrite -> plus_comm.
+      apply IHR.
+  -
+    unfold fR.
+    generalize dependent n.
+    generalize dependent o.
+    induction m as [| m' IHm'].
+    +
+      intros.
+      simpl in H.
+      rewrite <- H.
+      apply R_equiv_fR_helper.
+    +
+      intros.
+      rewrite <- H.
+      simpl.
+      apply c2.
+      destruct o.
+      *
+        simpl in H. discriminate.
+      *
+        simpl in H. injection H.
+        intros.
+        apply IHm' in H0.
+        injection H.
+        intros.
+        rewrite <- H1 in H0.
+        apply H0.
+Qed.
+      
 (** [] *)
 
 End R.
@@ -1049,25 +1114,94 @@ End R.
       Hint: choose your induction carefully! *)
 
 Inductive subseq : list nat -> list nat -> Prop :=
-(* FILL IN HERE *)
+| sub_eq (l : list nat) : subseq l l
+| sub_add (x:nat) (l1 l2 : list nat) (H: subseq l1 l2) : subseq l1 (x :: l2)
+| sub_app (l1 l2 l3 l4 : list nat) (H1: subseq l1 l2) (H2: subseq l3 l4)
+  : subseq (l1 ++ l3) (l2 ++ l4)
 .
 
 Theorem subseq_refl : forall (l : list nat), subseq l l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply sub_eq.
+Qed.
+
+Lemma subseq_nil_always : forall (l : list nat), subseq [] l.
+Proof.
+  induction l as [|x l' IHl'].
+  -
+    apply sub_eq.
+  -
+    apply sub_add.
+    apply IHl'.
+Qed.
 
 Theorem subseq_app : forall (l1 l2 l3 : list nat),
   subseq l1 l2 ->
   subseq l1 (l2 ++ l3).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  (* (subseq_nil_always l3) *)
+  intros.
+  assert(H1: subseq [] l3).
+  {
+    apply (subseq_nil_always l3).
+  }
+  apply (sub_app _ _ _ _ H) in H1.
+  assert(H2: l1 ++ [] = l1).
+  {
+    apply app_nil_r.
+  }
+  rewrite H2 in H1.
+  apply H1.
+Qed.
 
+Lemma subseq_trans_helper: forall l1 l2 l3,
+    subseq (l1 ++ l2) l3 -> subseq l2 l3.
+Proof.
+  Admitted.
+    
 Theorem subseq_trans : forall (l1 l2 l3 : list nat),
   subseq l1 l2 ->
   subseq l2 l3 ->
   subseq l1 l3.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  generalize dependent l1.
+  induction H0.
+  -
+    intros. apply H.
+  -
+    intros. apply sub_add. apply IHsubseq in H. apply H.
+  -
+    intros.
+    induction l0 as [|y0 l0' IHl0'].
+    +
+      apply subseq_nil_always.
+    +
+      
+    
+      
+
+
+    
+    
+  (* generalize dependent l3. *)
+  (* induction H. *)
+  (* - *)
+  (*   intros. *)
+  (*   apply H0. *)
+  (* - *)
+  (*   intros. *)
+  (*   assert(H1: x :: l2 = [x] ++ l2). *)
+  (*   { *)
+  (*     reflexivity. *)
+  (*   } *)
+  (*   rewrite -> H1 in H0. *)
+  (*   apply subseq_trans_helper in H0. *)
+  (*   apply IHsubseq in H0. *)
+  (*   apply H0. *)
+  (* - *)
+  (*   intros. *)
+    (* subseq l1 l0  subseq l3 l0 -> subseq (l1 ++ l3) (l0 ++ l0) *)
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (R_provability2)  
