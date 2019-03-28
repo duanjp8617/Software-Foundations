@@ -2209,6 +2209,26 @@ Proof.
   destruct H1.
 Qed.
 
+Lemma equivalence2_helper: forall P Q: Prop,
+    ~(P /\ Q) -> ~P \/ ~Q.
+Proof.
+  intros.
+  left.
+  unfold not.
+  intros.
+  unfold not in H.
+  apply H.
+Abort.
+
+
+Theorem equivalence2: double_negation_elimination -> de_morgan_not_and_not.
+Proof.
+  unfold double_negation_elimination.
+  unfold de_morgan_not_and_not.
+  intros.
+Abort.
+
+  
 (* FILL IN HERE 
 
     [] *)
