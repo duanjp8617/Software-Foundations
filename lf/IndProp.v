@@ -1116,8 +1116,8 @@ End R.
 Inductive subseq : list nat -> list nat -> Prop :=
 | sub_eq (l : list nat) : subseq l l
 | sub_add (x:nat) (l1 l2 : list nat) (H: subseq l1 l2) : subseq l1 (x :: l2)
-| sub_app (l1 l2 l3 l4 : list nat) (H1: subseq l1 l2) (H2: subseq l3 l4)
-  : subseq (l1 ++ l3) (l2 ++ l4)
+| sub_app (x:nat) (lx l1 l2 : list nat) (H1: subseq [x] lx) (H2: subseq l1 l2)
+  : subseq (x :: l1) (lx ++ l2)
 .
 
 Theorem subseq_refl : forall (l : list nat), subseq l l.
@@ -1135,24 +1135,45 @@ Proof.
     apply IHl'.
 Qed.
 
+Theorem subseq_app_helper: forall l1 l2,
+    subseq l1 (l1 ++ l2).
+Proof.
+  intros l1.
+  induction l1 as [| x l1' IHl1'].
+  -
+    simpl.
+    apply subseq_nil_always.
+  -
+    intros.
+    simpl.
+Admitted.                         
+
 Theorem subseq_app : forall (l1 l2 l3 : list nat),
   subseq l1 l2 ->
   subseq l1 (l2 ++ l3).
 Proof.
-  (* (subseq_nil_always l3) *)
-  intros.
-  assert(H1: subseq [] l3).
-  {
-    apply (subseq_nil_always l3).
-  }
-  apply (sub_app _ _ _ _ H) in H1.
-  assert(H2: l1 ++ [] = l1).
-  {
-    apply app_nil_r.
-  }
-  rewrite H2 in H1.
-  apply H1.
-Qed.
+  intros. generalize dependent l3.
+  induction H.
+  -
+    intros.
+    apply subseq_app_helper.
+  -
+    intros.
+Admitted.
+
+  (* intros. *)
+  (* assert(H1: subseq [] l3). *)
+  (* { *)
+  (*   apply (subseq_nil_always l3). *)
+  (* } *)
+  (* apply (sub_app _ _ _ _ H) in H1. *)
+  (* assert(H2: l1 ++ [] = l1). *)
+  (* { *)
+  (*   apply app_nil_r. *)
+  (* } *)
+  (* rewrite H2 in H1. *)
+  (* apply H1. *)
+
 
 Lemma subseq_trans_helper: forall l1 l2 l3,
     subseq (l1 ++ l2) l3 -> subseq l2 l3.
