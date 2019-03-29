@@ -1119,6 +1119,11 @@ Inductive subseq : list nat -> list nat -> Prop :=
 | mt (x:nat) (l1 l2 : list nat) (H: subseq l1 l2) : subseq (x :: l1) (x :: l2)
 .
 
+(* Nothing too special, but remember, when defining an inductive proposition, 
+   be sure tha we can use inversion and apply to reduce to a certain condition.
+   A good way to test whether our definition is correct is to test some examples.
+   Check whether we can trivially prove some simple example. *)
+
 Example em1 : subseq [1;2;3] [1;1;1;2;2;3].
 Proof.
   apply mt. apply mismt. apply mismt. apply mt. apply mismt. apply eq.
@@ -1179,6 +1184,11 @@ Proof.
     apply IHl'.
 Qed.
 
+(* Inductive subseq : list nat -> list nat -> Prop := *)
+(* | eq (l : list nat) : subseq l l *)
+(* | mismt (x:nat) (l1 l2 : list nat) (H: subseq l1 l2) : subseq l1 (x :: l2) *)
+(* | mt (x:nat) (l1 l2 : list nat) (H: subseq l1 l2) : subseq (x :: l1) (x :: l2) *)
+(* . *)
 
 Theorem subseq_app : forall (l1 l2 l3 : list nat),
   subseq l1 l2 ->
@@ -1457,13 +1467,24 @@ Qed.
 Lemma empty_is_empty : forall T (s : list T),
   ~ (s =~ EmptySet).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold not.
+  intros.
+  inversion H.
+Qed.
 
 Lemma MUnion' : forall T (s : list T) (re1 re2 : @reg_exp T),
   s =~ re1 \/ s =~ re2 ->
   s =~ Union re1 re2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  destruct H as [H1|H2].
+  -
+    apply MUnionL.
+    apply H1.
+  -
+    apply MUnionR.
+    apply H2.
+Qed.
 
 (** The next lemma is stated in terms of the [fold] function from the
     [Poly] chapter: If [ss : list (list T)] represents a sequence of
@@ -1474,7 +1495,19 @@ Lemma MStar' : forall T (ss : list (list T)) (re : reg_exp),
   (forall s, In s ss -> s =~ re) ->
   fold app ss [] =~ Star re.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction ss as [|t ss' IHss'].
+  -
+    intros. simpl. apply MStar0.
+  -
+    intros. simpl. apply MStarApp.
+    +
+      apply H.
+      simpl.  left. reflexivity.
+    +
+      apply IHss'.
+      intros. apply H. simpl. right. apply H0.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (reg_exp_of_list_spec)  
@@ -1485,8 +1518,85 @@ Proof.
 Lemma reg_exp_of_list_spec : forall T (s1 s2 : list T),
   s1 =~ reg_exp_of_list s2 <-> s1 = s2.
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  split.
+  -
+    generalize dependent s2.
+    induction s1 as [| t s1' IHs1'].
+    +
+      intros.
+      induction s2 as [| u s2' IHs2'].
+      *
+        reflexivity.
+      *
+        simpl in H.
+        inversion H.
+        assert (H' : s1 ++ s2 = [] -> s1 = []).
+        {
+          destruct s1.
+          -
+            intros. reflexivity.
+          -
+            intros. simpl in H5. inversion H5.
+        }
+        apply H' in H1.
+        rewrite H1 in H3.
+        inversion H3.
+    +
+      intros.
+      destruct s2 as [| u s2' IHs2'].
+      *
+        simpl in H. inversion H.
+      *
+        (* We are doing nothing too special. By inversion on H, we 
+           can see that t = u and s1' = s2'. But the inversion generate
+           differnt terms, we need some rewrite to convert these terms. *)
+        simpl in H. inversion H.
+        inversion H3.
+        rewrite <- H5 in H1.
+        simpl in H1.
+        inversion H1.
+        rewrite H9 in H4.
+        apply IHs1' in H4.
+        rewrite H4.
+        reflexivity.
+  -
+    intros.
+    generalize dependent s2.
+    induction s1 as [| t s1' IHs1'].
+    +
+      intros.
+      destruct s2.
+      *
+        simpl. apply MEmpty.
+      *
+        inversion H.
+    +
+      intros.
+      destruct s2 as [| u s2' IHs2'].
+      *
+        inversion H.
+      *
+        simpl.
+        assert (H': t :: s1' = [t] ++ s1').
+        {
+          simpl. reflexivity.
+        }
+        rewrite H'.
+        apply MApp.
+        {
+          inversion H.
+          apply MChar.
+        }
+        {
+          inversion H.
+          apply IHs1' in H2.
+          inversion H.
+          rewrite H4 in H2.
+          apply H2.
+        }
+Qed.
+
+    (** [] *)
 
 (** Since the definition of [exp_match] has a recursive
     structure, we might expect that proofs involving regular
@@ -1511,6 +1621,27 @@ Fixpoint re_chars {T} (re : reg_exp) : list T :=
   end.
 
 (** We can then phrase our theorem as follows: *)
+
+(* T : Type *)
+(* s : list T *)
+(* re : reg_exp *)
+(* x : T *)
+(* Hmatch : s =~ re *)
+(* Hin : In x s *)
+(* ============================ *)
+(* In x (re_chars re) *)
+
+(* Inductive exp_match (T : Type) : list T -> reg_exp -> Prop := *)
+(*     MEmpty : [ ] =~ EmptyStr *)
+(*   | MChar : forall x : T, [x] =~ Char x *)
+(*   | MApp : forall (s1 : list T) (re1 : reg_exp) (s2 : list T) (re2 : reg_exp), *)
+(*            s1 =~ re1 -> s2 =~ re2 -> s1 ++ s2 =~ App re1 re2 *)
+(*   | MUnionL : forall (s1 : list T) (re1 re2 : reg_exp), s1 =~ re1 -> s1 =~ Union re1 re2 *)
+(*   | MUnionR : forall (re1 : reg_exp) (s2 : list T) (re2 : reg_exp), *)
+(*               s2 =~ re2 -> s2 =~ Union re1 re2 *)
+(*   | MStar0 : forall re : reg_exp, [ ] =~ Star re *)
+(*   | MStarApp : forall (s1 s2 : list T) (re : reg_exp), *)
+(*                s1 =~ re -> s2 =~ Star re -> s1 ++ s2 =~ Star re *)
 
 Theorem in_re_match : forall T (s : list T) (re : reg_exp) (x : T),
   s =~ re ->
@@ -1568,13 +1699,87 @@ Qed.
     regular expression matches some string. Prove that your function
     is correct. *)
 
-Fixpoint re_not_empty {T : Type} (re : @reg_exp T) : bool
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint re_not_empty {T : Type} (re : @reg_exp T) : bool :=
+  match re with
+  | EmptySet => false
+  | EmptyStr => true
+  | Char _ => true
+  | App re1 re2 => andb (re_not_empty re1) (re_not_empty re2)
+  | Union re1 re2 => orb (re_not_empty re1) (re_not_empty re2)
+  | Star _ => true
+  end.
 
 Lemma re_not_empty_correct : forall T (re : @reg_exp T),
   (exists s, s =~ re) <-> re_not_empty re = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split.
+  -
+    intros.
+    destruct H.
+    induction H as [|x'|s1 re1 s2 re2 Hm1 IH1 Hm2 IH2
+                    |s1 re1 re2 Hm IH | re1 s2 re2 Hm IH | re
+                    | s1 s2 re Hm1 IH1 Hm2 IH2].
+    +
+      reflexivity.
+    +
+      reflexivity.
+    +
+      simpl. rewrite IH1. rewrite IH2. reflexivity.
+    +
+      simpl. rewrite IH. reflexivity.
+    +
+      simpl. rewrite IH.
+      destruct (re_not_empty re1).
+      *
+        reflexivity.
+      *
+        reflexivity.
+    +
+      reflexivity.
+    +
+      reflexivity.
+  -
+    intros.
+    induction re as [ | |x'|re1 IH1 re2 IH2|re1 IH1 re2 IH2|re IH].
+    +
+      simpl in H. discriminate.
+    +
+      exists []. apply MEmpty.
+    +
+      exists [x']. apply MChar.
+    +
+      simpl in H. 
+      apply andb_true_iff in H.
+      destruct H.
+      apply IH1 in H.
+      apply IH2 in H0.
+      destruct H.
+      destruct H0.
+      exists (x ++ x0).
+      apply MApp.
+      *
+        apply H.
+      *
+        apply H0.
+    +
+      simpl in H. apply orb_true_iff in H.
+      destruct H.
+      *
+        apply IH1 in H.
+        destruct H.
+        exists x.
+        apply MUnionL.
+        apply H.
+      *
+        apply IH2 in H.
+        destruct H.
+        exists x.
+        apply MUnionR.
+        apply H.
+    +
+      exists [].
+      apply MStar0.
+Qed.    
 (** [] *)
 
 (* ================================================================= *)
@@ -1585,6 +1790,25 @@ Proof.
     isn't sufficiently general.  The effect of this is to lose
     information (much as [destruct] without an [eqn:] clause can do),
     and leave you unable to complete the proof.  Here's an example: *)
+
+  (* T : Type *)
+  (* s1, s2 : list T *)
+  (* re : reg_exp *)
+  (* H1 : s1 =~ Star re *)
+  (* ============================ *)
+  (* s2 =~ Star re -> s1 ++ s2 =~ Star re *)
+
+(* Inductive exp_match (T : Type) : list T -> reg_exp -> Prop := *)
+(*     MEmpty : [ ] =~ EmptyStr *)
+(*   | MChar : forall x : T, [x] =~ Char x *)
+(*   | MApp : forall (s1 : list T) (re1 : reg_exp) (s2 : list T) (re2 : reg_exp), *)
+(*            s1 =~ re1 -> s2 =~ re2 -> s1 ++ s2 =~ App re1 re2 *)
+(*   | MUnionL : forall (s1 : list T) (re1 re2 : reg_exp), s1 =~ re1 -> s1 =~ Union re1 re2 *)
+(*   | MUnionR : forall (re1 : reg_exp) (s2 : list T) (re2 : reg_exp), *)
+(*               s2 =~ re2 -> s2 =~ Union re1 re2 *)
+(*   | MStar0 : forall re : reg_exp, [ ] =~ Star re *)
+(*   | MStarApp : forall (s1 s2 : list T) (re : reg_exp), *)
+(*                s1 =~ re -> s2 =~ Star re -> s1 ++ s2 =~ Star re *)
 
 Lemma star_app: forall T (s1 s2 : list T) (re : @reg_exp T),
   s1 =~ Star re ->
@@ -1713,8 +1937,56 @@ Lemma MStar'' : forall T (s : list T) (re : reg_exp),
     s = fold app ss []
     /\ forall s', In s' ss -> s' =~ re.
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  intros.
+  remember (Star re) as re'.
+  generalize dependent re.
+  induction H as [| x | s1 re1 s2 re2 Hm1 IH1 Hm2 IH2 
+                  | s1 re1 re2 H IH | re1 s2 re2 H IH | re1
+                  | s1 s2 re1 Hm1 IH1 Hm2 IH2].
+  -
+    discriminate.
+  -
+    discriminate.
+  -
+    discriminate.
+  -
+    discriminate.
+  -
+    discriminate.
+  -
+    exists [].
+    split.
+    +
+      reflexivity.
+    +
+      intros.
+      destruct H.
+  -
+    (* For this case, first inversion Heqre' to obtain an equality proposition.
+       Then use one of the inductive hypothesis to continue. Select (s1 :: ss) 
+       as the existance quantity. Then perform some rewriting and we are done. *)
+    intros.
+    inversion Heqre'.
+    apply IH2 in Heqre'.
+    destruct Heqre' as [ss].
+    destruct H as [H1 H2].
+    exists (s1 :: ss).
+    split.
+    *
+      simpl. rewrite -> H1. reflexivity.
+    *
+      intros.
+      simpl in H.
+      destruct H as [H3 | H4].
+      {
+        rewrite -> H3 in Hm1. rewrite H0 in Hm1. apply Hm1.
+      }
+      {
+        apply H2 in H4. apply H4.
+      }
+Qed.  
+
+    (** [] *)
 
 (** **** Exercise: 5 stars, advanced (pumping)  
 
