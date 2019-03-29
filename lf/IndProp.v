@@ -1114,71 +1114,93 @@ End R.
       Hint: choose your induction carefully! *)
 
 Inductive subseq : list nat -> list nat -> Prop :=
-| sub_eq (l : list nat) : subseq l l
-| sub_add (x:nat) (l1 l2 : list nat) (H: subseq l1 l2) : subseq l1 (x :: l2)
-| sub_app (x:nat) (lx l1 l2 : list nat) (H1: subseq [x] lx) (H2: subseq l1 l2)
-  : subseq (x :: l1) (lx ++ l2)
+| eq (l : list nat) : subseq l l
+| mismt (x:nat) (l1 l2 : list nat) (H: subseq l1 l2) : subseq l1 (x :: l2)
+| mt (x:nat) (l1 l2 : list nat) (H: subseq l1 l2) : subseq (x :: l1) (x :: l2)
 .
 
-Theorem subseq_refl : forall (l : list nat), subseq l l.
+Example em1 : subseq [1;2;3] [1;1;1;2;2;3].
 Proof.
-  apply sub_eq.
+  apply mt. apply mismt. apply mismt. apply mt. apply mismt. apply eq.
 Qed.
 
-Lemma subseq_nil_always : forall (l : list nat), subseq [] l.
+Example em2 : subseq [1;2;3] [5;6;1;9;9;2;7;3;8].
 Proof.
-  induction l as [|x l' IHl'].
+  apply mismt. apply mismt. apply mt. apply mismt. apply mismt.
+  apply mt. apply mismt. apply mt. apply mismt. apply eq.
+Qed.
+
+Example em3 : ~ subseq [1;2;3] [1;2].
+Proof.
+  unfold not. intros.
+  inversion H.
   -
-    apply sub_eq.
+    inversion H2. inversion H6.
   -
-    apply sub_add.
+    inversion H1.
+    +
+      inversion H6.
+    +
+      inversion H5.
+Qed.
+
+Example em4 : ~ subseq [1;2;3] [5;6;2;1;7;3;8].
+Proof.
+  unfold not.
+  intros.
+  inversion H.
+  inversion H2.
+  inversion H6.
+  inversion H10.
+  -
+    inversion H14.
+    inversion H18.
+    inversion H22.
+    inversion H26.
+  -
+    inversion H13.
+    inversion H18.
+    inversion H22.
+    inversion H26.
+Qed.
+    
+Theorem subseq_refl : forall (l : list nat), subseq l l.
+Proof.
+  apply eq.
+Qed.
+
+Theorem subseq_nil_always : forall (l : list nat), subseq [] l.
+Proof.
+  induction l as [| x' l' IHl'].
+  -
+    apply eq.
+  -
+    apply mismt.
     apply IHl'.
 Qed.
 
-Theorem subseq_app_helper: forall l1 l2,
-    subseq l1 (l1 ++ l2).
-Proof.
-  intros l1.
-  induction l1 as [| x l1' IHl1'].
-  -
-    simpl.
-    apply subseq_nil_always.
-  -
-    intros.
-    simpl.
-Admitted.                         
 
 Theorem subseq_app : forall (l1 l2 l3 : list nat),
   subseq l1 l2 ->
   subseq l1 (l2 ++ l3).
 Proof.
-  intros. generalize dependent l3.
+  intros.
+  generalize dependent l3.
   induction H.
   -
     intros.
-    apply subseq_app_helper.
+    induction l as [| x l' IHl'].
+    +
+      simpl. apply subseq_nil_always.
+    +
+      simpl. apply mt. apply IHl'.
   -
     intros.
-Admitted.
-
-  (* intros. *)
-  (* assert(H1: subseq [] l3). *)
-  (* { *)
-  (*   apply (subseq_nil_always l3). *)
-  (* } *)
-  (* apply (sub_app _ _ _ _ H) in H1. *)
-  (* assert(H2: l1 ++ [] = l1). *)
-  (* { *)
-  (*   apply app_nil_r. *)
-  (* } *)
-  (* rewrite H2 in H1. *)
-  (* apply H1. *)
-
-
-Lemma subseq_trans_helper: forall l1 l2 l3,
-    subseq (l1 ++ l2) l3 -> subseq l2 l3.
-Proof.
-  Admitted.
+    simpl. apply mismt. apply IHsubseq.
+  -
+    intros.
+    simpl. apply mt. apply IHsubseq.
+Qed.
     
 Theorem subseq_trans : forall (l1 l2 l3 : list nat),
   subseq l1 l2 ->
@@ -1191,38 +1213,18 @@ Proof.
   -
     intros. apply H.
   -
-    intros. apply sub_add. apply IHsubseq in H. apply H.
+    intros. apply mismt. apply IHsubseq in H. apply H.
   -
     intros.
-    induction l0 as [|y0 l0' IHl0'].
+    inversion H.
     +
-      apply subseq_nil_always.
+      apply mt. apply H0.
     +
-      
-    
-      
-
-
-    
-    
-  (* generalize dependent l3. *)
-  (* induction H. *)
-  (* - *)
-  (*   intros. *)
-  (*   apply H0. *)
-  (* - *)
-  (*   intros. *)
-  (*   assert(H1: x :: l2 = [x] ++ l2). *)
-  (*   { *)
-  (*     reflexivity. *)
-  (*   } *)
-  (*   rewrite -> H1 in H0. *)
-  (*   apply subseq_trans_helper in H0. *)
-  (*   apply IHsubseq in H0. *)
-  (*   apply H0. *)
-  (* - *)
-  (*   intros. *)
-    (* subseq l1 l0  subseq l3 l0 -> subseq (l1 ++ l3) (l0 ++ l0) *)
+      apply mismt.  apply IHsubseq in H3. apply H3.
+    +
+      apply mt. apply IHsubseq in H3. apply H3.
+Qed.  
+  
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (R_provability2)  
