@@ -2388,7 +2388,18 @@ Qed.
 (** **** Exercise: 2 stars, standard, recommended (reflect_iff)  *)
 Theorem reflect_iff : forall P b, reflect P b -> (P <-> b = true).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  destruct b.
+  -
+    inversion H. split.
+    + intros. reflexivity.
+    + intros. apply H0.
+  -
+    inversion H. split.
+    + intros. apply H0 in H1. destruct H1.
+    + intros. discriminate.
+Qed.  
+      
 (** [] *)
 
 (** The advantage of [reflect] over the normal "if and only if"
@@ -2439,8 +2450,31 @@ Fixpoint count n l :=
 Theorem eqbP_practice : forall n l,
   count n l = 0 -> ~(In n l).
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  intros.
+  induction l as [| x l' IHl'].
+  -
+    unfold not. simpl. intros. apply H0.
+  -
+    simpl. unfold not. intros. destruct H0.
+    +
+      rewrite H0 in H. simpl in H. rewrite <-eqb_refl in H.
+      discriminate.
+    +
+      destruct (eqbP (count n l') 0) as [H1 | H1].
+      *
+        apply IHl' in H1. apply H1 in H0. destruct H0.
+      *
+        simpl in H.
+        destruct (eqbP n x) as [H2 | H2].
+        {
+          discriminate.
+        }
+        {
+          apply H1 in H. destruct H.
+        }
+Qed.
+        
+        (** [] *)
 
 (** This small example shows how reflection gives us a small gain in
     convenience; in larger developments, using [reflect] consistently
