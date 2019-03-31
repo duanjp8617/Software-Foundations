@@ -1988,6 +1988,16 @@ Qed.
 
     (** [] *)
 
+Lemma Nonsense: forall X:Type, (exists l: list X, l = []) -> forall l : list X, l = l ++ [].
+Proof.
+  intros.
+  destruct H as [[]].
+  -
+    rewrite app_nil_r.
+    reflexivity.
+  -
+Abort.    
+
 (** **** Exercise: 5 stars, advanced (pumping)  
 
     One of the first really interesting theorems in the theory of
@@ -2061,6 +2071,87 @@ Lemma pumping : forall T (re : @reg_exp T) s,
 
 Import Coq.omega.Omega.
 
+(* The solution to pumping lemma is quite simple as long as you
+   convert the le inductive proposition into leb representation.
+   With leb representation, we can destruct the parameters of leb function
+   to do the proper case analysis. The proof is quite long, but the
+   idea is quite simple if you can find out the conversion. *)
+
+Lemma pumping_fuck_fuck_fuck: forall a b c, a <= b -> (a + c) <= (b + c).
+Proof.
+  intros.
+  induction H as [| b Hmatch IH].
+  -
+    apply le_n.
+  -
+    simpl. apply le_S. apply IH.
+Qed.      
+
+Lemma pumping_fuck_fuck: forall a b c d, (a < c) -> (b < d) -> (a + b < c + d).
+Proof.
+  unfold lt. intros. remember (S b) as b'.
+  induction H0 as [| d Hmatch IH].
+  -
+    rewrite plus_comm. rewrite <- plus_Sn_m. rewrite <- Heqb'. rewrite -> plus_comm.
+    apply pumping_fuck_fuck_fuck.
+    assert (H': a <= S a).
+    {
+      apply le_S. apply le_n.
+    }
+    apply (le_trans _ _ _ H') in H.
+    apply H.
+  -
+    assert(H': c + (S d) = S(c + d)).
+    {
+      rewrite -> plus_comm. simpl. rewrite -> plus_comm. reflexivity.
+    }
+    rewrite H'. apply le_S. apply IH.
+Qed.    
+                                                                       
+Lemma pumping_fuck: forall a b c d, (a + b <=? c + d) = Datatypes.true -> (a <=? c) = Datatypes.false -> (b <=? d) = Datatypes.true.
+Proof.
+  intros.
+  destruct (b <=? d) as [] eqn:E.
+  -
+    reflexivity.
+  -
+    apply leb_iff_conv in H0.
+    apply leb_iff_conv in E.
+    apply (pumping_fuck_fuck _ _ _ _ H0) in E.
+    apply leb_iff_conv in E.
+    rewrite E in H.
+    discriminate.
+Qed.
+
+Lemma pumping_fuck2: forall (X:Type) (l: list X), (1 <=? length l) = Datatypes.false -> l = [].
+Proof.
+  intros.
+  destruct l as [] eqn:E.
+  -
+    reflexivity.
+  -
+    simpl in H. discriminate.
+Qed.
+
+Lemma pumping_fuck3: forall (X:Type) (l: list X), (1 <= length l) -> l <> [].
+Proof.
+  intros. unfold not. intros. rewrite H0 in H. simpl in H. inversion H.
+Qed.
+
+Lemma pumping_fuck4: forall T m s (re: @reg_exp T), s =~ re -> napp m s =~ Star re.
+Proof.
+  intros T m.
+  induction m as [| m'].
+  -
+    intros. simpl. apply MStar0.
+  -
+    intros. simpl. apply MStarApp.
+    +
+      apply H.
+    +
+      apply IHm' in H. apply H.
+Qed.
+
 Proof.
   intros T re s Hmatch.
   induction Hmatch
@@ -2069,7 +2160,160 @@ Proof.
        | re | s1 s2 re Hmatch1 IH1 Hmatch2 IH2 ].
   - (* MEmpty *)
     simpl. omega.
-  (* FILL IN HERE *) Admitted.
+  -
+    simpl. intros. omega.
+  -
+    intros.
+    destruct (pumping_constant re1 <=? length s1) as [] eqn:E'.
+    +
+      apply leb_iff in E'.
+      apply IH1 in E'.
+      destruct E' as [s2' [s3' [s4']]].
+      destruct H0 as [H0_1 [H0_2 H0_3]].
+      exists s2'. exists s3'. exists (s4' ++ s2).
+      split.
+      {
+        rewrite H0_1. rewrite <- app_assoc.
+        assert (H': (s3' ++ s4') ++ s2 = s3' ++ s4' ++ s2).
+        {
+          rewrite <- app_assoc. reflexivity.
+        }
+        rewrite -> H'.
+        reflexivity.
+      }
+      {
+        split.
+        -
+          apply H0_2.
+        -
+          intros.
+          assert(H': s2' ++ napp m s3' ++ s4' ++ s2 = (s2' ++ napp m s3' ++ s4') ++ s2).
+          {
+            rewrite <- app_assoc.
+            assert(H': (napp m s3' ++ s4') ++ s2 = napp m s3' ++ s4' ++ s2).
+            {
+              rewrite -> app_assoc. reflexivity.
+            }
+            rewrite -> H'. reflexivity.
+          }
+          rewrite H'. apply MApp.
+          + apply H0_3.
+          + apply Hmatch2.
+      }
+    +
+      simpl in H. rewrite app_length in H. apply leb_iff in H.
+      apply (pumping_fuck _ _ _ _ H) in E'.
+      apply leb_iff in E'.
+      apply IH2 in E'.
+      destruct E' as [s1' [s3' [s4']]].
+      destruct H0 as [H0_1 [H0_2 H0_3]].
+      exists (s1 ++ s1'). exists s3'. exists s4'.
+      split.
+      {
+        rewrite H0_1. rewrite <- app_assoc.
+        reflexivity.
+      }
+      {
+        split.
+        -
+          apply H0_2.
+        -
+          intros.
+          rewrite <- app_assoc.
+          apply MApp.
+          + apply Hmatch1.
+          + apply H0_3.
+      }        
+  -
+    intros. simpl in H. 
+    assert(H': pumping_constant re1 <= pumping_constant re1 + pumping_constant re2).
+    {
+      apply le_plus_l.
+    }
+    apply (le_trans _ _ _ H') in H.
+    apply IH in H.
+    destruct H as [s2 [s3 [s4]]].
+    destruct H as [H1 [H2 H3]].
+    exists s2. exists s3. exists s4.
+    split.
+    + apply H1.
+    + split.
+      {
+        apply H2.
+      }
+      {
+        intros.
+        remember (s2 ++ napp m s3 ++ s4) as s'.
+        apply MUnionL.
+        rewrite Heqs'.
+        apply H3.
+      }
+  -
+    intros. simpl in H.
+    assert(H': pumping_constant re2 <= pumping_constant re1 + pumping_constant re2).
+    {
+      rewrite plus_comm.
+      apply le_plus_l.
+    }
+    apply (le_trans _ _ _ H') in H.
+    apply IH in H.
+    destruct H as [s1 [s3 [s4]]].
+    destruct H as [H1 [H2 H3]].
+    exists s1. exists s3. exists s4.
+    split.
+    + apply H1.
+    + split.
+      {
+        apply H2.
+      }
+      {
+        intros.
+        remember (s1 ++ napp m s3 ++ s4) as s'.
+        apply MUnionR.
+        rewrite Heqs'.
+        apply H3.
+      }
+  -
+    intros. simpl in H. inversion H.
+  -
+    intros. simpl in H. simpl in IH2.
+    destruct (1 <=? length s2) as [] eqn:E'.
+    +
+      apply leb_iff in E'.
+      apply IH2 in E'.
+      destruct E' as [s1' [s3' [s4']]].
+      destruct H0 as [H0_1 [H0_2 H0_3]].
+      exists (s1 ++ s1'). exists s3'. exists s4'.
+      split.
+      * rewrite H0_1. rewrite -> app_assoc. reflexivity.
+      *
+        split.
+        {
+          apply H0_2.
+        }
+        {
+          intros. rewrite <- app_assoc. apply MStarApp.
+          - apply Hmatch1.
+          - apply H0_3.
+        }
+    +
+      apply pumping_fuck2 in E'.
+      rewrite E' in H. rewrite app_nil_r in H. 
+      apply pumping_fuck3 in H.
+      exists []. exists s1. exists [].
+      split.
+      * simpl. rewrite -> E'. reflexivity.
+      *
+        split.
+        {
+          apply H.
+        }
+        {
+          simpl. intros. rewrite app_nil_r.
+          apply pumping_fuck4. apply Hmatch1.
+        }
+Qed.                                                
+    (* FILL IN HERE *) 
 
 End Pumping.
 (** [] *)
