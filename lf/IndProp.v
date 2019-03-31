@@ -1,6 +1,6 @@
 (** * IndProp: Inductively Defined Propositions *)
 
-Set Warnings "-notation-overridden,-parsing".
+(* Set Warnings "-notation-overridden,-parsing". *)
 From LF Require Export Logic.
 Require Coq.omega.Omega.
 
@@ -2506,7 +2506,14 @@ Qed.
     [nostutter]. *)
 
 Inductive nostutter {X:Type} : list X -> Prop :=
- (* FILL IN HERE *)
+(* | NoStuNil : nostutter [] *)
+(* | NoStuFst (x: X) : nostutter [x] *)
+(* | NoStuSnd (x y z: X) (H1: nostutter [x;y])  *)
+(* | NoStuSnd (x y: X) (l: list X) (H1: nostutter [x;y]) (H2: nostutter (y::l)) : nostutter (x :: (y :: l)) *)
+| ns_unequal : forall (x y:X), x <> y -> nostutter [x;y]
+| ns_nil : nostutter []
+| ns_single (x: X) : nostutter [x]
+| ns_long (x y: X) (l: list X) (H1: nostutter [x;y]) (H2: nostutter (y::l)) : nostutter (x :: (y :: l))
 .
 (** Make sure each of these tests succeeds, but feel free to change
     the suggested proof (in comments) if the given one doesn't work
@@ -2519,34 +2526,51 @@ Inductive nostutter {X:Type} : list X -> Prop :=
     example with more basic tactics.)  *)
 
 Example test_nostutter_1: nostutter [3;1;4;1;5;6].
-(* FILL IN HERE *) Admitted.
-(* 
-  Proof. repeat constructor; apply eqb_neq; auto.
-  Qed.
-*)
+Proof.
+(*   apply ns_long. *)
+(*   - apply ns_unequal. discriminate. *)
+(*   - *)
+(*     apply ns_long. *)
+(*     + *)
+(*       apply ns_unequal. discriminate. *)
+(*     + *)
+(*       apply ns_long. *)
+(*       * apply ns_unequal. discriminate. *)
+(*       * apply ns_long. *)
+(*         { *)
+(*           apply ns_unequal. discriminate. *)
+(*         } *)
+(*         { *)
+(*           apply ns_unequal. discriminate. *)
+(*         } *)
+(* Qed. *)     
+       
+(* FILL IN HERE *) 
+ 
+repeat constructor; apply eqb_neq; auto.
+Qed.
+
 
 Example test_nostutter_2:  nostutter (@nil nat).
-(* FILL IN HERE *) Admitted.
-(* 
-  Proof. repeat constructor; apply eqb_neq; auto.
-  Qed.
-*)
+(* FILL IN HERE *) 
+
+Proof. repeat constructor; apply eqb_neq; auto.
+Qed.
+
 
 Example test_nostutter_3:  nostutter [5].
-(* FILL IN HERE *) Admitted.
-(* 
-  Proof. repeat constructor; apply eqb_false; auto. Qed.
-*)
+(* FILL IN HERE *) 
+Proof. repeat constructor; apply eqb_false; auto. Qed.
+
 
 Example test_nostutter_4:      not (nostutter [3;1;1;4]).
-(* FILL IN HERE *) Admitted.
-(* 
-  Proof. intro.
-  repeat match goal with
-    h: nostutter _ |- _ => inversion h; clear h; subst
-  end.
-  contradiction Hneq0; auto. Qed.
-*)
+(* FILL IN HERE *)  
+Proof. intro.
+       repeat match goal with
+                h: nostutter _ |- _ => inversion h; clear h; subst
+              end.
+       contradiction Hneq0; auto. Qed.
+
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_nostutter : option (nat*string) := None.
