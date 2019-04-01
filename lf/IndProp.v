@@ -2612,7 +2612,110 @@ Definition manual_grade_for_nostutter : option (nat*string) := None.
     to be a merge of two others.  Do this with an inductive relation,
     not a [Fixpoint].)  *)
 
-(* FILL IN HERE *)
+Inductive in_order_merge {X:Type}: list X -> list X -> list X -> Prop :=
+| iom_empty : in_order_merge [] [] []
+| iom_left (x:X) (l1 l2 l3: list X) (H: in_order_merge l1 l2 l3):
+    in_order_merge (x::l1) l2 (x::l3)
+| iom_right (x:X) (l1 l2 l3: list X) (H: in_order_merge l1 l2 l3):
+    in_order_merge l1 (x::l2) (x::l3)
+.                   
+
+Example iom_e1: in_order_merge [1;6;2] [4;3] [1;4;6;2;3].
+Proof.
+  apply iom_left. apply iom_right. apply iom_left.
+  apply iom_left. apply iom_right. apply iom_empty.
+Qed.
+
+Example iom_e2: in_order_merge [1;1;3;7;4] [1;4;5;6] [1;1;1;3;7;4;4;5;6].
+Proof.
+  apply iom_right. apply iom_left. apply iom_left. apply iom_left.
+  apply iom_left. apply iom_right. apply iom_left. apply iom_right.
+  apply iom_right. apply iom_empty.
+Qed.
+
+Example iom_e3: ~ in_order_merge [6;4;3] [1;3;4] [7;0;5;2;2;1;1].
+Proof.
+  unfold not. intros. inversion H. Qed.
+
+Example iom_e4: ~ in_order_merge [7;2;3] [7;5;1;1] [7;7;5;3;2;1;1].
+Proof.
+  unfold not. intros. inversion H.
+  -
+    inversion H3. inversion H7. inversion H12.
+  -
+    inversion H2. inversion H8. inversion H12.
+Qed.
+
+Lemma filter_challenge_helper_2_1: forall (X:Type) (x:X) (l:list X) (test:X->bool),
+    length (filter test l) <= length l.
+Proof.
+  intros. induction l as [| x' l' IHl'].
+  -
+    simpl. apply le_n.
+  -
+    simpl. destruct (test x') as [] eqn:E.
+    +
+      simpl. apply (Pumping.pumping_fuck_fuck_fuck _ _ 1) in IHl'.
+      rewrite plus_comm in IHl'. simpl in IHl'. rewrite plus_comm in IHl'. simpl in IHl'.
+      apply IHl'.
+    +
+      apply le_S. apply IHl'.
+Qed.
+
+Theorem filter_challenge_helper_2_2: forall n, ~(S n <= n).
+Proof.
+Admitted.
+      
+Lemma filter_challenge_helper_2: forall (X:Type) (x:X) (l:list X) (test:X->bool),
+    length (filter test l) <> length (x :: l).
+Proof.
+  simpl. unfold not. intros. assert(H': length (filter test l) <= length l).
+  {
+    apply (filter_challenge_helper_2_1 X x l test).
+  }
+  rewrite H in H'. apply (filter_challenge_helper_2_2 _) in H'. destruct H'.
+Qed.  
+
+Lemma filter_challenge_helper_1: forall (X:Type) (l1 l2: list X), length l1 <> length l2 -> l1 <> l2.
+Proof.
+  unfold not.
+  intros. assert(H': length l1 = length l2).
+  {
+    rewrite H0. reflexivity.
+  }
+  apply H in H'. destruct H'.
+Qed.
+
+Theorem filter_challenge_helper: forall (X:Type) (x:X) (l:list X) (test:X->bool),
+    filter test l <> x :: l.
+  intros.
+  apply filter_challenge_helper_1. apply filter_challenge_helper_2.
+Qed.
+
+Theorem filter_challenge: forall (X:Type) (l1 l2 l: list X) (test: X -> bool),
+    in_order_merge l1 l2 l ->
+    filter test l1 = l1 ->
+    filter test l2 = [] ->
+    filter test l = l1.
+Proof.
+  intros X l1 l2 l test H.
+  induction H as [| x' l1' l2' l3' Hmatch IH | x' l1' l2' l3' Hmatch IH].
+  -
+    intros. reflexivity.
+  -
+    intros. simpl in H. destruct (test x') as [] eqn:E.
+    +
+      inversion H. apply (IH H2) in H0. simpl. rewrite E. rewrite H0. rewrite H2.
+      reflexivity.
+    +
+      simpl. rewrite E. apply filter_challenge_helper in H. destruct H.
+  -
+    intros. simpl in H0. destruct (test x') as [] eqn:E.
+    +
+      inversion H0.
+    +
+      apply (IH H) in H0. simpl. rewrite E. apply H0.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_filter_challenge : option (nat*string) := None.
