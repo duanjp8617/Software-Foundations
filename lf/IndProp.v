@@ -1113,10 +1113,10 @@ End R.
       is a subsequence of [l3], then [l1] is a subsequence of [l3].
       Hint: choose your induction carefully! *)
 
-Inductive subseq : list nat -> list nat -> Prop :=
-| eq (l : list nat) : subseq l l
-| mismt (x:nat) (l1 l2 : list nat) (H: subseq l1 l2) : subseq l1 (x :: l2)
-| mt (x:nat) (l1 l2 : list nat) (H: subseq l1 l2) : subseq (x :: l1) (x :: l2)
+Inductive subseq {X:Type} : list X -> list X -> Prop :=
+| eq (l : list X) : subseq l l
+| mismt (x:X) (l1 l2 : list X) (H: subseq l1 l2) : subseq l1 (x :: l2)
+| mt (x:X) (l1 l2 : list X) (H: subseq l1 l2) : subseq (x :: l1) (x :: l2)
 .
 
 (* Nothing too special, but remember, when defining an inductive proposition, 
@@ -2664,8 +2664,19 @@ Qed.
 
 Theorem filter_challenge_helper_2_2: forall n, ~(S n <= n).
 Proof.
-Admitted.
-      
+  intros.
+  assert(H: n < S n).
+  {
+    unfold lt. apply le_n.
+  }
+  assert(H': S n > n).
+  {
+    unfold gt. apply H.
+  }
+  apply Gt.gt_not_le in H'.
+  apply H'.
+Qed.
+
 Lemma filter_challenge_helper_2: forall (X:Type) (x:X) (l:list X) (test:X->bool),
     length (filter test l) <> length (x :: l).
 Proof.
@@ -2728,6 +2739,30 @@ Definition manual_grade_for_filter_challenge : option (nat*string) := None.
     evaluates to [true] on all their members, [filter test l] is the
     longest.  Formalize this claim and prove it. *)
 
+Theorem filter_challenge_2: forall (X:Type) (l1 l:list X) (test:X->bool),
+    subseq l1 l -> filter test l1 = l1 -> length l1 <= length (filter test l).
+Proof.
+  intros X l1 l test H.
+  induction H as [l' | x' l1' l2' Hmatch IH | x' l1' l2' Hmatch IH].
+  -
+    intros. rewrite -> H. apply le_n.
+  -
+    intros. apply IH in H. simpl. destruct (test x') as [] eqn:E.
+    +
+      simpl. apply le_S in H. apply H.
+    +
+      apply H.
+  -
+    intros. simpl in H. destruct (test x') as [] eqn:E.
+    +
+      inversion H. rewrite H1. apply IH in H1. simpl. rewrite E. simpl.
+      apply (Pumping.pumping_fuck_fuck_fuck _ _ 1) in H1.
+      rewrite plus_comm in H1. simpl in H1. rewrite plus_comm in H1. simpl in H1.
+      apply H1.
+    +
+      apply filter_challenge_helper in H. destruct H.
+Qed.
+  
 (* FILL IN HERE 
 
     [] *)
@@ -2755,6 +2790,39 @@ Definition manual_grade_for_filter_challenge : option (nat*string) := None.
        forall l, pal l -> l = rev l.
 *)
 
+Inductive pal {X:Type}: list X -> Prop :=
+| pal_nil: pal []
+| pal_single (x:X): pal [x]
+| pal_reflect (x:X) (l: list X) (H: pal l): pal ( (x :: l) ++ [x])
+.
+
+Theorem pal_app_rev: forall (X:Type) (l:list X),
+    pal (l ++ rev l).
+Proof.
+  intros. induction l as [| x' l' IH].
+  -
+    simpl. apply pal_nil.
+  -
+    simpl. rewrite app_assoc.
+    apply pal_reflect. apply IH.
+Qed.
+
+Theorem pal_rev: forall (X:Type) (l:list X), pal l -> l = rev l.
+Proof.
+  intros X l H.
+  induction H as [| x | x l' Hmatch IH].
+  -
+    simpl. reflexivity.
+  -
+    reflexivity.
+  -
+    simpl. assert (H': rev (l' ++ [x]) = rev [x] ++ rev l').
+    {
+      apply rev_app_distr.
+    }
+    simpl in H'. rewrite H'. rewrite <- IH. reflexivity.
+Qed.
+
 (* FILL IN HERE *)
 
 (* Do not modify the following line: *)
@@ -2770,8 +2838,19 @@ Definition manual_grade_for_pal_pal_app_rev_pal_rev : option (nat*string) := Non
      forall l, l = rev l -> pal l.
 *)
 
-(* FILL IN HERE 
-
+Theorem palindrome_converse: forall (X:Type) (l:list X), l = rev l -> pal l.
+Proof.
+  intros X l.
+  induction l as [| x l' IH].
+  -
+    intros. apply pal_nil.
+  -
+    intros. simpl in H.
+    destruct (rev l') as [] eqn:E.
+    +
+      simpl in H. inversion H. apply pal_single.
+    +
+      simpl in H. inversion H. 
     [] *)
 
 (** **** Exercise: 4 stars, advanced, optional (NoDup)  
