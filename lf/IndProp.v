@@ -2513,7 +2513,7 @@ Inductive nostutter {X:Type} : list X -> Prop :=
 | ns_unequal : forall (x y:X), x <> y -> nostutter [x;y]
 | ns_nil : nostutter []
 | ns_single (x: X) : nostutter [x]
-| ns_long (x y: X) (l: list X) (H1: nostutter [x;y]) (H2: nostutter (y::l)) : nostutter (x :: (y :: l))
+| ns_long (x y: X) (l: list X) (H1: x <> y) (H2: nostutter (y::l)) : nostutter (x :: (y :: l))
 .
 (** Make sure each of these tests succeeds, but feel free to change
     the suggested proof (in comments) if the given one doesn't work
@@ -2564,12 +2564,17 @@ Proof. repeat constructor; apply eqb_false; auto. Qed.
 
 
 Example test_nostutter_4:      not (nostutter [3;1;1;4]).
+Proof.
+  unfold not. intros. inversion H. inversion H4.
+  assert(H': 1 = 1). { reflexivity. } apply H7 in H'. destruct H'.
+Qed.
+    
 (* FILL IN HERE *)  
-Proof. intro.
-       repeat match goal with
-                h: nostutter _ |- _ => inversion h; clear h; subst
-              end.
-       contradiction Hneq0; auto. Qed.
+(* Proof. intro. *)
+(*        repeat match goal with *)
+(*                 h: nostutter _ |- _ => inversion h; clear h; subst *)
+(*               end. *)
+(*        contradiction Hneq0; auto. Qed. *)
 
 
 (* Do not modify the following line: *)
