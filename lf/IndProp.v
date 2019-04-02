@@ -2836,23 +2836,57 @@ Definition manual_grade_for_pal_pal_app_rev_pal_rev : option (nat*string) := Non
     previous exercise, prove that
 
      forall l, l = rev l -> pal l.
-*)
+ *)
 
+Inductive ev_l {X:Type}: list X -> Prop :=
+| ev_l_nil : ev_l []
+| ev_l_double (x y:X) (l:list X) (H:ev_l l) : ev_l (x::l++[y]).
+
+Inductive odd_l {X:Type}: list X -> Prop :=
+| odd_l_single (x:X): odd_l [x]
+| odd_l_double (x y:X) (l:list X) (H: odd_l l) : odd_l (x::l++[y]).
+
+Theorem panlindrome_converse_helper_1_1:
+  forall (X:Type) (l:list X),
+    l = rev l -> ev_l l -> exists (l': list X), l = l' ++ rev l'.
+Proof.
+Admitted.
+
+Theorem panlindrome_converse_helper_1_2:
+  forall (X:Type) (l:list X), evenb (length l) = true -> ev_l l.
+  intros. induction l as [| x' l' IH].
+  -
+    apply ev_l_nil.
+  -
+    induction l' as [| x'' l'' IH'].
+    +
+      simpl in H. discriminate.
+    +
+      
+    
+
+  
 Theorem palindrome_converse: forall (X:Type) (l:list X), l = rev l -> pal l.
 Proof.
   intros X l.
-  induction l as [| x l' IH].
+  destruct l as [| x1 l'].
   -
     intros. apply pal_nil.
   -
-    intros. simpl in H.
-    destruct (rev l') as [] eqn:E.
+    destruct l' as [|x2 l''].
     +
-      simpl in H. inversion H. apply pal_single.
+      intros. apply pal_single.
     +
-      simpl in H. inversion H. 
-    [] *)
-
+      intros. assert (H': x1::x2::l'' = [x1;x2] ++ l'').
+      {
+        reflexivity.
+      }
+      assert(H'': rev (x1::x2::l'') = rev l'' ++ [x2;x1]).
+      {
+        rewrite H'. rewrite rev_app_distr. reflexivity.
+      }
+      rewrite H'' in H. rewrite H. 
+                                            
 (** **** Exercise: 4 stars, advanced, optional (NoDup)  
 
     Recall the definition of the [In] property from the [Logic]
