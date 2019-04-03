@@ -2838,55 +2838,127 @@ Definition manual_grade_for_pal_pal_app_rev_pal_rev : option (nat*string) := Non
      forall l, l = rev l -> pal l.
  *)
 
-Inductive ev_l {X:Type}: list X -> Prop :=
-| ev_l_nil : ev_l []
-| ev_l_double (x y:X) (l:list X) (H:ev_l l) : ev_l (x::l++[y]).
+Inductive blist {X:Type} : Type :=
+| bnil
+| bone (x:X)
+| bcons (x:X) (bl: blist) (y:X).
 
-Inductive odd_l {X:Type}: list X -> Prop :=
-| odd_l_single (x:X): odd_l [x]
-| odd_l_double (x y:X) (l:list X) (H: odd_l l) : odd_l (x::l++[y]).
+Fixpoint blist_to_list {X:Type} (bl:blist) : list X :=
+  match bl with
+  | bnil => []
+  | bone x => [x]
+  | bcons x bl' y => x :: (blist_to_list bl') ++ [y]
+  end.
 
-Theorem panlindrome_converse_helper_1_1:
-  forall (X:Type) (l:list X),
-    l = rev l -> ev_l l -> exists (l': list X), l = l' ++ rev l'.
+
+Theorem panlindrome_helper_2:
+  forall (X:Type) (x y:X) (l1 l2:list X),
+    l1 ++ [x] = l2 ++ [y] -> l1 = l2 /\ x = y.
 Proof.
 Admitted.
 
-Theorem panlindrome_converse_helper_1_2:
-  forall (X:Type) (l:list X), evenb (length l) = true -> ev_l l.
-  intros. induction l as [| x' l' IH].
-  -
-    apply ev_l_nil.
-  -
-    induction l' as [| x'' l'' IH'].
-    +
-      simpl in H. discriminate.
-    +
-      
-    
+Theorem panlindrome_helper_3:
+  forall (X:Type) (x:X) (l:list X),
+    rev(l++[x]) = x::(rev l).
+Proof.
+Admitted.
 
-  
+Theorem panlindorme_helper_1:
+  forall (X:Type) (l:list X), (exists (bl:blist), l = blist_to_list bl).
+Proof.
+  intros.
+  induction l as [| x' l' IH].
+  -
+    exists bnil. reflexivity.
+  -
+    destruct IH as [bl'].
+    generalize dependent l'. generalize dependent x'.
+    induction bl' as [| hd | hd' bl'' IH tl'].
+    +
+      intros. simpl in H. rewrite H. exists (bone x'). reflexivity.
+    +
+      intros. simpl in H. rewrite H. exists (bcons x' bnil hd). reflexivity.
+    +
+      intros.
+      destruct l' as [|x_tmp l_tmp].
+      {
+        simpl in H. inversion H.
+      }
+      {
+        destruct l_tmp as [|y_tmp l_tmp].
+        -
+          simpl in H. inversion H. destruct (blist_to_list bl'').
+          + inversion H2.
+          + simpl in H2. inversion H2.
+        -
+          assert(H': y_tmp::l_tmp = rev(rev(y_tmp::l_tmp))).
+          {
+            rewrite rev_involutive. reflexivity.
+          }
+          rewrite H' in H.
+          destruct (rev (y_tmp :: l_tmp)) as [|rev_hd rev_tl].
+          +
+            simpl in H'. inversion H'.
+          +
+            simpl in H. inversion H as [H1].
+            apply panlindrome_helper_2 in H0. destruct H0 as [H0_1 H0_2].
+            rewrite H'. simpl.
+            apply (IH hd' (rev rev_tl)) in H0_1.
+            destruct H0_1 as [bl_fuck].
+            assert(H_fuck: x' :: hd' :: rev rev_tl ++ [rev_hd] = x' :: (hd' :: rev rev_tl) ++ [rev_hd]).
+            {
+              simpl. reflexivity.
+            }
+            rewrite H_fuck. rewrite H0.
+            exists (bcons x' bl_fuck rev_hd).
+            simpl. reflexivity.
+      }
+Qed.            
+            
 Theorem palindrome_converse: forall (X:Type) (l:list X), l = rev l -> pal l.
 Proof.
   intros X l.
-  destruct l as [| x1 l'].
+  assert(H': exists (bl:blist), l = blist_to_list bl).
+  {
+    apply (panlindorme_helper_1 X l).
+  }
+  destruct H' as [bl]. rewrite H.
+  intros. generalize dependent l. induction bl as [| x' | x' bl'' IH y'].
   -
-    intros. apply pal_nil.
+    simpl. intros. apply pal_nil.
   -
-    destruct l' as [|x2 l''].
+    simpl. intros. apply pal_single.
+  -
+    intros. simpl in H0. rewrite panlindrome_helper_3 in H0.
+    inversion H0. apply panlindrome_helper_2 in H3. destruct H3 as [HFUCK HSHIT].
+    simpl. apply pal_reflect.
+    (* Here comes the most important step, which is to prove that
+       we have some l' so that l' = blist_to_list bl'' *)
+    simpl in H. destruct l as [| hd tl].
     +
-      intros. apply pal_single.
+      inversion H.
     +
-      intros. assert (H': x1::x2::l'' = [x1;x2] ++ l'').
+      destruct tl as [| hd' tl'].
       {
-        reflexivity.
+        inversion H.
+        destruct (blist_to_list bl'').
+        -  simpl in H4. inversion H4.
+        -  simpl in H4. inversion H4.
       }
-      assert(H'': rev (x1::x2::l'') = rev l'' ++ [x2;x1]).
       {
-        rewrite H'. rewrite rev_app_distr. reflexivity.
+        assert(H': hd' :: tl' = rev (rev (hd' :: tl'))).
+        {
+          rewrite rev_involutive. reflexivity.
+        }
+        rewrite H' in H.
+        destruct (rev (hd' :: tl')) as [| hd'' tl''] eqn:E.
+        - simpl in H'. inversion H'.
+        - simpl in H. inversion H. 
+          apply panlindrome_helper_2 in H4. destruct H4.
+          apply (IH HFUCK) in H1. apply H1.
       }
-      rewrite H'' in H. rewrite H. 
-                                            
+Qed.        
+        
 (** **** Exercise: 4 stars, advanced, optional (NoDup)  
 
     Recall the definition of the [In] property from the [Logic]
