@@ -2838,6 +2838,32 @@ Definition manual_grade_for_pal_pal_app_rev_pal_rev : option (nat*string) := Non
      forall l, l = rev l -> pal l.
  *)
 
+(* This problem is extremely hard to tackel if we directly do induction on l. 
+   Induction on l leads to the following proof: prove that when x :: l = rev (x :: l), 
+   we have l = rev l, which is clearly false. To tackle this problem, we need to induct
+   on a new structure, that adds new elements to both head and tail of the list.
+   In this case, we can rely on pal_reflect to simplify the goal, and use properties
+   of rev to proceed, leading to a feasible proof.
+
+   What we do here is to define a new type called blist. blist is a binary version 
+   of the original list definition. It adds elements to both head and tail 
+   using the bcons constructor. 
+
+   However, in order to transform the list l appeared in the original theorem into
+   a blist, we need to prove that there exists some blist bl, such that 
+   l = blist_to_list bl. With this lemma, we can turn the orignal list into blist and
+   do induction over blist. 
+
+   Doing induction over blist leads to a very straightforward proof of the 
+   panlindrome_converse theorem. 
+
+   The hard part is actually how to prove the lemma for transforming list into blist.
+   The tricky part is to do induction on the list first, and then do induction on 
+   blist. After doing induction on list, we will proceed to a situation where we can't
+   make any more progress. Then we can see that, if we do induction on blist, we can 
+   actually continue the proof and complete the final proof of the lemma.
+*)
+
 Inductive blist {X:Type} : Type :=
 | bnil
 | bone (x:X)
@@ -2855,13 +2881,77 @@ Theorem panlindrome_helper_2:
   forall (X:Type) (x y:X) (l1 l2:list X),
     l1 ++ [x] = l2 ++ [y] -> l1 = l2 /\ x = y.
 Proof.
-Admitted.
-
+  intros.
+  split.
+  -
+    generalize dependent x.
+    generalize dependent y.
+    generalize dependent l2.
+    induction l1 as [| x' l1' IHl1'].
+    +
+      simpl. intros.
+      destruct l2.
+      { reflexivity. }
+      { simpl in H. inversion H.
+        destruct l2.
+        - simpl in H2. inversion H2.
+        - simpl in H2. inversion H2.
+      }
+    +
+      intros.
+      destruct l2.
+      {
+        simpl in H. inversion H.
+        simpl in H2. 
+        destruct l1'.
+        + simpl in H2. inversion H2.
+        + simpl in H2. inversion H2.
+      }
+      {
+        simpl in H. inversion H.
+        apply IHl1' in H2. rewrite H2. reflexivity.
+      }
+  -
+    generalize dependent x.
+    generalize dependent y.
+    generalize dependent l2.
+    induction l1 as [| x' l1' IHl1'].
+    +
+      simpl. intros.
+      destruct l2.
+      { inversion H. reflexivity. }
+      { simpl in H. inversion H.
+        destruct l2.
+        - simpl in H2. inversion H2.
+        - simpl in H2. inversion H2.
+      }
+    +
+      intros.
+      destruct l2.
+      {
+        simpl in H. inversion H.
+        simpl in H2. 
+        destruct l1'.
+        + simpl in H2. inversion H2.
+        + simpl in H2. inversion H2.
+      }
+      {
+        simpl in H. inversion H.
+        apply IHl1' in H2. rewrite H2. reflexivity.
+      }
+Qed.          
+          
 Theorem panlindrome_helper_3:
   forall (X:Type) (x:X) (l:list X),
     rev(l++[x]) = x::(rev l).
 Proof.
-Admitted.
+  intros. generalize dependent x.
+  induction l as [| x' l' IHl'].
+  -
+    simpl. intros. reflexivity.
+  -
+    intros. simpl. rewrite IHl'. simpl. reflexivity.
+Qed.
 
 Theorem panlindorme_helper_1:
   forall (X:Type) (l:list X), (exists (bl:blist), l = blist_to_list bl).
@@ -2976,7 +3066,11 @@ Qed.
     lists (with elements of type X) that have no elements in
     common. *)
 
-(* FILL IN HERE *)
+Fixpoint disjoint (X:Type) (l1 l2: list X) : Prop :=
+  match l1 with
+  | [] => True
+  | hd :: tl => (~(In hd l2)) /\ (disjoint X tl l2)
+  end.
 
 (** Next, use [In] to define an inductive proposition [NoDup X
     l], which should be provable exactly when [l] is a list (with
@@ -2985,10 +3079,108 @@ Qed.
     bool []] should be provable, while [NoDup nat [1;2;1]] and
     [NoDup bool [true;true]] should not be.  *)
 
+Inductive NoDup (X:Type) : (list X) -> Prop :=
+| nd_nil : NoDup X []
+| nd_single (x:X) : NoDup X [x]
+| nd_long (x:X) (l: list X) (H1: ~(In x l)) (H2: NoDup X l) : NoDup X (x :: l). 
+
+
 (* FILL IN HERE *)
 
 (** Finally, state and prove one or more interesting theorems relating
     [disjoint], [NoDup] and [++] (list append).  *)
+
+Theorem nodup_fucker_helper_1 : forall (X:Type) (l1 l2:list X),
+    [] = l1 ++ l2 -> l1 = [] /\ l2 = [].
+Proof.
+  intros. split.
+  -
+    destruct l1.
+    +
+      reflexivity.
+    +
+      simpl in H. inversion H.
+  -
+    destruct l2.
+    +
+      reflexivity.
+    +
+      destruct l1.
+      {
+        simpl in H. inversion H.
+      }
+      {
+        simpl in H. inversion H.
+      }
+Qed.
+
+Theorem nodup_fucker_helper_2 : forall (X:Type) (l:list X),
+    disjoint X l [].
+Proof.
+  intros. induction l as [| x' l' IH].
+  -
+    simpl. apply I.
+  -
+    simpl. split.
+    +
+      unfold not. intros. destruct H.
+    +
+      apply IH.
+Qed.
+
+Theorem nodup_fucker_3 : forall (X:Type) (x:X) (l1 l2:list X),
+    ~ In x (l1 ++ l2) -> ~ In x l2.
+Proof.
+  intros. rewrite In_app_iff in H.
+  unfold not. unfold not in H. intros H'. apply H. right. apply H'.
+Qed.
+    
+Theorem nodup_fucker: forall (X:Type) (l1 l2: list X),
+    NoDup X (l1 ++ l2) -> disjoint X l1 l2.
+Proof.
+  intros X l1 l2.
+  remember (l1 ++ l2) as l.
+  intros H. generalize dependent l1. generalize dependent l2.
+  induction H as [| x' | x' l' Hmatch1 Hmatch2 IH2].
+  -
+    intros. apply nodup_fucker_helper_1 in Heql.
+    destruct Heql as [H1 H2]. rewrite H1. rewrite H2. simpl.
+    apply I.
+  -
+    intros.
+    destruct l1 as [| l1_h l1_tl].
+    +
+      simpl. apply I.
+    +
+      destruct l2 as [| l2_h l2_tl].
+      {
+        rewrite app_nil_r in Heql. inversion Heql.
+        simpl. split.
+        - unfold not. intros. destruct H.
+        - apply I.
+      }
+      {
+        simpl in Heql. destruct l1_tl.
+        - simpl in Heql. inversion Heql.
+        - simpl in Heql. inversion Heql.
+      }
+  -
+    intros.
+    destruct l1 as [| l1_h l1_tl].
+    +
+      simpl. apply I.
+    +
+      simpl in Heql. inversion Heql.
+      assert(H2: l' = l1_tl ++ l2). { apply H1. }
+      apply IH2 in H1. simpl. split.
+      {
+        apply (nodup_fucker_3 X l1_h l1_tl l2).
+        rewrite <- H2. rewrite <- H0. apply Hmatch1.
+      }
+      {
+        apply H1.
+      }
+Qed.                          
 
 (* FILL IN HERE *)
 
@@ -3010,14 +3202,53 @@ Lemma in_split : forall (X:Type) (x:X) (l:list X),
   In x l ->
   exists l1 l2, l = l1 ++ x :: l2.
 Proof.
-  (* FILL IN HERE *) Admitted.
-
+  intros X x l. generalize dependent x.
+  induction l as [| x l' IHl].
+  -
+    intros. simpl in H. destruct H.
+  -
+    intros. simpl in H. destruct H.
+    +
+      exists []. exists l'. rewrite H. simpl. reflexivity.
+    +
+      apply IHl in H. destruct H as [l1' [l2']].
+      exists (x::l1'). exists l2'.
+      rewrite H. simpl. reflexivity.
+Qed.
+      
 (** Now define a property [repeats] such that [repeats X l] asserts
     that [l] contains at least one repeated element (of type [X]).  *)
 
 Inductive repeats {X:Type} : list X -> Prop :=
-  (* FILL IN HERE *)
+| rep_fst (x:X) (l:list X) (H2: repeats l) : repeats (x :: l) 
+| rep_snd (x:X) (l:list X) (H: In x l) : repeats (x :: l)
 .
+
+Example rp_e1: ~ (repeats [1]).
+Proof.
+  unfold not. intros. inversion H.
+  -
+    inversion H0.
+  -
+    simpl in H1. destruct H1.
+Qed.
+
+Example rp_e2: ~ (repeats [1;2]).
+Proof.
+  unfold not. intros. inversion H.
+  -
+    simpl in H0. inversion H0.
+    +
+      inversion H4.
+    +
+      inversion H4.
+  -
+    simpl in H1. destruct H1.
+    +
+      inversion H1.
+    +
+      destruct H1.
+Qed.
 
 (** Now, here's a way to formalize the pigeonhole principle.  Suppose
     list [l2] represents a list of pigeonhole labels, and list [l1]
@@ -3039,7 +3270,22 @@ Theorem pigeonhole_principle: forall (X:Type) (l1  l2:list X),
    repeats l1.
 Proof.
    intros X l1. induction l1 as [|x l1' IHl1'].
-  (* FILL IN HERE *) Admitted.
+   -
+     intros. destruct l2.
+     +
+       simpl in H1. inversion H1.
+     +
+       simpl in H1. inversion H1.
+   -
+     intros.
+     unfold excluded_middle in H.
+     destruct (H (In x l1')) as [H' | H''].
+     +
+       apply rep_snd. apply H'.
+     +
+       unfold not in H''.
+Abort.
+         
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_check_repeats : option (nat*string) := None.
@@ -3187,7 +3433,32 @@ Lemma app_ne : forall (a : ascii) s re0 re1,
     ([ ] =~ re0 /\ a :: s =~ re1) \/
     exists s0 s1, s = s0 ++ s1 /\ a :: s0 =~ re0 /\ s1 =~ re1.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split.
+  -
+    intros. inversion H. destruct s1 as [| s1_h s1_tl].
+    +
+      left. simpl. split.
+      * apply H3. * apply H4.
+    +
+      simpl in H1. inversion H1. right.
+      exists s1_tl, s2. split.
+      * reflexivity.
+      * split.
+        { rewrite <- H6. apply H3. }
+        { apply H4. }
+  -
+    intros. destruct H.
+    +
+      destruct H as [H1 H2].
+      apply (MApp [] re0 (a::s) re1 H1 H2).
+    +
+      destruct H as [s0 [s1]].
+      destruct H as [H1 [H2 H3]].
+      rewrite H1.
+      apply (MApp (a::s0) re0 s1 re1 H2) in H3.
+      simpl in H3. apply H3.
+Qed.
+      
 (** [] *)
 
 (** [s] matches [Union re0 re1] iff [s] matches [re0] or [s] matches [re1]. *)
@@ -3223,7 +3494,51 @@ Lemma star_ne : forall (a : ascii) s re,
     a :: s =~ Star re <->
     exists s0 s1, s = s0 ++ s1 /\ a :: s0 =~ re /\ s1 =~ Star re.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split.
+  -
+    intros. remember (a :: s) as l. remember (Star re) as re'.
+    induction H as [| x' | s1' re1' s2' re2' Hmatch1 IH1 Hmatch2 IH2
+                    | s1' re1' re2' H IH | re1' s2' re2' H IH
+                    | re' | s1' s2' re' Hmatch1 IH1 Hmatch2 IH2].
+    +
+      inversion Heql.
+    +
+      inversion Heqre'.
+    +
+      inversion Heqre'.
+    +
+      inversion Heqre'.
+    +
+      inversion Heqre'.
+    +
+      inversion Heql.
+    +
+      destruct s1' as [| s1'_h s1'_tl].
+      *
+        simpl in Heql. apply (IH2 Heql) in Heqre'.
+        apply Heqre'.
+      *
+        simpl in Heql. inversion Heql.
+        exists s1'_tl, s2'.
+        split.
+        { reflexivity. }
+        { split.
+          - rewrite H0 in Hmatch1. inversion Heqre'. rewrite <- H2.
+            apply Hmatch1.
+          - apply Hmatch2.
+        }
+  -
+    intros. destruct H as [s0 [s1]].
+    destruct H as [H1 [H2 H3]].
+    rewrite H1. assert(H': a::s0++s1 = (a::s0) ++ s1).
+    {
+      reflexivity.
+    }
+    rewrite H'. apply MStarApp.
+    + apply H2.
+    + apply H3.
+Qed.                                         
+    
 (** [] *)
 
 (** The definition of our regex matcher will include two fixpoint
@@ -3237,8 +3552,17 @@ Definition refl_matches_eps m :=
 
     Complete the definition of [match_eps] so that it tests if a given
     regex matches the empty string: *)
-Fixpoint match_eps (re: @reg_exp ascii) : bool
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint match_eps (re: @reg_exp ascii) : bool :=
+  match re with
+  | EmptySet => false
+  | EmptyStr => true
+  | Char _ => false
+  | App re1 re2 => andb (match_eps re1) (match_eps re2)
+  | Union re1 re2 => orb (match_eps re1) (match_eps re2)
+  | Star _ => true
+  end.
+
+  
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (match_eps_refl)  
@@ -3248,7 +3572,80 @@ Fixpoint match_eps (re: @reg_exp ascii) : bool
     [ReflectT] and [ReflectF].) *)
 Lemma match_eps_refl : refl_matches_eps match_eps.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold refl_matches_eps. intros.
+  destruct (match_eps re) as [] eqn:E.
+  -
+    apply ReflectT.
+    induction re as [| | x | re1 IH1 re2 IH2 | re1 IH1 re2 IH2 | re1 IH1].
+    +
+      simpl in E. discriminate.
+    +
+      apply MEmpty.
+    +
+      simpl in E. discriminate.
+    +
+      simpl in E.
+      destruct (match_eps re1) as [].
+      *
+        destruct (match_eps re2) as [].
+        {
+          assert(H': true = true).
+          {
+            reflexivity.
+          }
+          assert(H'': true = true).
+          {
+            reflexivity.
+          }
+          apply IH1 in H'.
+          apply IH2 in H''.
+          assert(H''':  forall X:Type, @nil X = @nil X ++ @nil X).
+          {
+            reflexivity.
+          }
+          rewrite H'''. apply MApp.
+          - apply H'.
+          - apply H''.
+        }
+        simpl in E. discriminate.
+      *
+        simpl in E. discriminate.
+    +
+      simpl in E.
+      destruct (match_eps re1).
+      *
+        assert(H: true = true).
+        {
+          reflexivity.
+        }
+        apply IH1 in H. apply MUnionL. apply H.
+      *
+        destruct (match_eps re2).
+        {
+          assert(H: true = true).
+          {
+            reflexivity.
+          }
+          apply IH2 in H. apply MUnionR. apply H.
+        }
+        {
+          simpl in E. discriminate.
+        }
+    +
+      apply MStar0.
+  -
+    apply ReflectF. unfold not. intros.
+    remember [] as s.
+    induction H as [| x' | s1' re1' s2' re2' Hmatch1 IH1 Hmatch2 IH2
+                    | s1' re1' re2' H IH | re1' s2' re2' H IH
+                    | re' | s1' s2' re' Hmatch1 IH1 Hmatch2 IH2].
+    +
+      simpl in E. discriminate.
+    +
+      inversion Heqs.
+    +
+      Abort.
+            
 (** [] *)
 
 (** We'll define other functions that use [match_eps]. However, the
