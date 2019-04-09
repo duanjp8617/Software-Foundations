@@ -3644,8 +3644,74 @@ Proof.
     +
       inversion Heqs.
     +
-      Abort.
-            
+      simpl in E.
+      assert(H': s1' = [] /\ s2' = []).
+      {
+        split.
+        -
+          destruct s1'.
+          +
+            reflexivity.
+          +
+            simpl in Heqs. inversion Heqs.
+        -
+          destruct s2'.
+          +
+            reflexivity.
+          +
+            destruct s1'.
+            *
+              simpl in Heqs. inversion Heqs.
+            *
+              simpl in Heqs. inversion Heqs.
+      }
+      destruct H' as [H1 H2].
+      destruct (match_eps re1') as [] eqn:E'.
+      *
+        destruct (match_eps re2') as [] eqn:E''.
+        {
+          simpl in E. discriminate E.
+        }
+        {
+          assert(H': false = false).
+          {
+            reflexivity.
+          }
+          apply (IH2 H') in H2. destruct H2.
+        }
+      *
+        assert(H': false = false).
+        {
+          reflexivity.
+        }
+        apply (IH1 H') in H1. destruct H1.
+    +
+      simpl in E.
+      destruct (match_eps re1') as [] eqn:E'.
+      * simpl in E. discriminate.
+      * assert(H': false = false).
+        {
+          reflexivity.
+        }
+        apply (IH H') in Heqs. destruct Heqs.
+    +
+      simpl in E.
+      destruct (match_eps re2') as [] eqn:E'.
+      * simpl in E.
+        destruct (match_eps re1').
+        { simpl in E. discriminate. }
+        { simpl in E. discriminate. }
+      * assert(H': false = false).
+        {
+          reflexivity.
+        }
+        apply (IH H') in Heqs. destruct Heqs.
+    +
+      simpl in E. discriminate.
+    +
+      simpl in E. discriminate.
+Qed.
+
 (** [] *)
 
 (** We'll define other functions that use [match_eps]. However, the
@@ -3672,8 +3738,23 @@ Definition derives d := forall a re, is_der re a (d a re).
     Define [derive] so that it derives strings. One natural
     implementation uses [match_eps] in some cases to determine if key
     regex's match the empty string. *)
-Fixpoint derive (a : ascii) (re : @reg_exp ascii) : @reg_exp ascii
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+
+Fixpoint derive (a : ascii) (re : @reg_exp ascii) : @reg_exp ascii :=
+  match re with
+  | EmptySet => EmptySet
+  | EmptyStr => EmptySet
+  | Char x => match (eqb (nat_of_ascii a) (nat_of_ascii x)) with
+              | true => EmptyStr
+              | false => EmptySet
+              end                
+  | App re1 re2 => match (match_eps re1) with
+                   | true => Union (App (derive a re1) re2) (derive a re2)
+                   | false => App (derive a re1) re2
+                   end
+  | Union re1 re2 => Union (derive a re1) (derive a re2)
+  | Star re' => App (derive a re') (Star re')
+  end.
+
 (** [] *)
 
 (** The [derive] function should pass the following tests. Each test
@@ -3687,44 +3768,52 @@ Example d := ascii_of_nat 100.
 (** "c" =~ EmptySet: *)
 Example test_der0 : match_eps (derive c (EmptySet)) = false.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  simpl. reflexivity.
+Qed.
 
 (** "c" =~ Char c: *)
 Example test_der1 : match_eps (derive c (Char c)) = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  simpl. reflexivity.
+Qed.
 
 (** "c" =~ Char d: *)
 Example test_der2 : match_eps (derive c (Char d)) = false.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  simpl. reflexivity.
+Qed.
 
 (** "c" =~ App (Char c) EmptyStr: *)
 Example test_der3 : match_eps (derive c (App (Char c) EmptyStr)) = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  simpl. reflexivity.
+Qed.
 
 (** "c" =~ App EmptyStr (Char c): *)
 Example test_der4 : match_eps (derive c (App EmptyStr (Char c))) = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  simpl. reflexivity.
+Qed.
 
 (** "c" =~ Star c: *)
 Example test_der5 : match_eps (derive c (Star (Char c))) = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  simpl. reflexivity.
+Qed.
 
 (** "cd" =~ App (Char c) (Char d): *)
 Example test_der6 :
   match_eps (derive d (derive c (App (Char c) (Char d)))) = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  simpl. reflexivity.
+Qed.
 
 (** "cd" =~ App (Char d) (Char c): *)
 Example test_der7 :
   match_eps (derive d (derive c (App (Char d) (Char c)))) = false.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  simpl. reflexivity.
+Qed.
 
 (** **** Exercise: 4 stars, standard, optional (derive_corr)  
 
@@ -3766,8 +3855,12 @@ Definition matches_regex m : Prop :=
 
     Complete the definition of [regex_match] so that it matches
     regexes. *)
-Fixpoint regex_match (s : string) (re : @reg_exp ascii) : bool
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint regex_match (s : string) (re : @reg_exp ascii) : bool :=
+  match s with
+  | [] => (match_eps re)
+  | hd :: tl => regex_match tl (derive hd re)
+  end.
+
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (regex_refl)  
