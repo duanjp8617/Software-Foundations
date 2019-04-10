@@ -3739,8 +3739,13 @@ Definition derives d := forall a re, is_der re a (d a re).
 
     Define [derive] so that it derives strings. One natural
     implementation uses [match_eps] in some cases to determine if key
-    regex's match the empty string. *)      
+    regex's match the empty string. *)
 
+(* Here, we should define a function called eqb_ascii, that uses xor operations
+   to test where two ascii characters are equal. Latter, we need to rely on 
+   properties of xor operations to prove two helper lemmas. If we use eqb_ascii 
+   instead of nat_of_ascii, the proof of the two helper lemmas will be significantly
+   simiplified. *)
 Fixpoint derive (a : ascii) (re : @reg_exp ascii) : @reg_exp ascii :=
   match re with
   | EmptySet => EmptySet
