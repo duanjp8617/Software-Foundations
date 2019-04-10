@@ -3263,6 +3263,8 @@ Qed.
     manage to do this, you will not need the [excluded_middle]
     hypothesis. *)
 
+(* I didn't figure out how to solve this exercise. I'll just leave it as 
+   it is not that interesting. *)
 Theorem pigeonhole_principle: forall (X:Type) (l1  l2:list X),
    excluded_middle ->
    (forall x, In x l1 -> In x l2) ->
@@ -3737,13 +3739,13 @@ Definition derives d := forall a re, is_der re a (d a re).
 
     Define [derive] so that it derives strings. One natural
     implementation uses [match_eps] in some cases to determine if key
-    regex's match the empty string. *)
+    regex's match the empty string. *)      
 
 Fixpoint derive (a : ascii) (re : @reg_exp ascii) : @reg_exp ascii :=
   match re with
   | EmptySet => EmptySet
   | EmptyStr => EmptySet
-  | Char x => match (eqb (nat_of_ascii a) (nat_of_ascii x)) with
+  | Char x => match ((nat_of_ascii a) =? (nat_of_ascii x))  with
               | true => EmptyStr
               | false => EmptySet
               end                
@@ -3836,9 +3838,136 @@ Qed.
     regex's (e.g., [s =~ re0 \/ s =~ re1]) using lemmas given above
     that are logical equivalences. You can then reason about these
     [Prop]'s naturally using [intro] and [destruct]. *)
+
+Lemma derive_corr_helper_1:
+  forall (a: ascii), (nat_of_ascii a =? nat_of_ascii a) = true.
+Proof. Admitted.
+
+Lemma derive_corr_helper_2:
+  forall (a x: ascii), (nat_of_ascii a =? nat_of_ascii x) = true -> a = x.
+Proof. Admitted.
+
+
 Lemma derive_corr : derives derive.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold derives. unfold is_der. intros.
+  split.
+  -
+    generalize dependent s.
+    induction re as [| | x' | re1 IH1 re2 IH2 | re1 IH1 re2 IH2 | re' IH].
+    +
+      intros. rewrite null_matches_none in H. destruct H.
+    +
+      intros. rewrite empty_nomatch_ne in H. destruct H.
+    +
+      intros. inversion H. simpl.
+      rewrite derive_corr_helper_1.
+      apply MEmpty.
+    +
+      intros.
+      rewrite app_ne in H. destruct H as [H1 | H2].
+      *
+        destruct H1 as [H1_1 H1_2]. apply IH2 in H1_2.
+        simpl. destruct (match_eps_refl re1) as [H1' | H2'].
+        {
+          apply MUnionR. apply H1_2.
+        }
+        {
+          unfold not in H2'. apply H2' in H1_1. destruct H1_1.
+        }
+      *
+        destruct H2 as [s0 [s1]].
+        destruct H as [H1 [H2 H3]].
+        simpl. destruct (match_eps_refl re1) as [H1' | H2'].
+        {
+          apply MUnionL. rewrite H1. apply MApp.
+          - apply IH1 in H2. apply H2.
+          - apply H3.
+        }
+        {
+          rewrite H1. apply MApp.
+          - apply IH1 in H2. apply H2.
+          - apply H3.
+        }
+    +
+      intros. simpl. inversion H.
+      * apply IH1 in H2. apply MUnionL. apply H2.      
+      * apply IH2 in H1. apply MUnionR. apply H1.      
+    +
+      intros. rewrite star_ne in H.
+      destruct H as [s0 [s1]].
+      destruct H as [H1 [H2 H3]].
+      simpl. rewrite H1. apply MApp.
+      * apply IH in H2. apply H2.
+      * apply H3.
+  -
+    intros.
+    generalize dependent s.
+    induction re as [| | x' | re1 IH1 re2 IH2 | re1 IH1 re2 IH2 | re' IH].
+    +
+      intros. simpl in H. rewrite null_matches_none in H. destruct H.
+    +
+      intros. simpl in H. rewrite null_matches_none in H. destruct H.
+    +
+      intros. simpl in H. destruct (nat_of_ascii a =? nat_of_ascii x') as [] eqn:E.
+      * 
+        apply derive_corr_helper_2 in E. rewrite E.
+        rewrite empty_matches_eps in H. rewrite char_eps_suffix. apply H.
+      *
+        rewrite null_matches_none in H. destruct H.
+    +
+      intros. rewrite app_ne. 
+      simpl in H.
+      destruct (match_eps re1) as [] eqn:E.
+      *
+        inversion H.
+        {
+          inversion H2. right. exists s0, s2. split.
+          - reflexivity.
+          - split.
+            + apply IH1 in H7. apply H7.
+            + apply H8.
+        }
+        {
+          left. split.
+          - destruct (match_eps_refl re1).
+            + apply H4. + discriminate E.
+          -
+            apply IH2 in H1. apply H1.
+        }
+      *
+        inversion H. right. exists s1, s2.
+        split.
+        {
+          reflexivity.
+        }
+        {
+          split.
+          - apply IH1 in H3. apply H3.
+          - apply H4.
+        }
+    +
+      intros. simpl in H. inversion H.
+      *
+        apply IH1 in H2. apply MUnionL. apply H2.
+      *
+        apply IH2 in H1. apply MUnionR. apply H1.
+    +
+      intros. simpl in H. rewrite star_ne.
+      inversion H.
+      exists s1, s2.
+      split.
+      * reflexivity.
+      * split.
+        {
+          apply IH in H3. apply H3.
+        }
+        {
+          apply H4.
+        }
+Qed.
+
+            
 (** [] *)
 
 (** We'll define the regex matcher using [derive]. However, the only
@@ -3878,7 +4007,42 @@ Fixpoint regex_match (s : string) (re : @reg_exp ascii) : bool :=
     [s =~ derive x re], and vice versa. *)
 Theorem regex_refl : matches_regex regex_match.
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  unfold matches_regex. intros. destruct (regex_match s re) as [] eqn:E.
+  -
+    apply ReflectT. generalize dependent re.
+    induction s as [| hd tl IH].
+    +
+      intros. simpl in E. destruct (match_eps_refl re).
+      * apply H. * discriminate E.
+    +
+      intros. simpl in E. rewrite (derive_corr hd re tl).
+      apply IH in E. apply E.
+  -
+    apply ReflectF. unfold not. intros. generalize dependent re.
+    induction s as [| hd tl IH].
+    +
+      intros. simpl in E. destruct (match_eps_refl re).
+      * discriminate E. * apply H0 in H. destruct H.
+    +
+      intros. simpl in E. rewrite (derive_corr hd re tl) in H.
+      apply IH in E.
+      * apply E. * apply H.
+Qed.
+
+
+(* Takeaways:
+   1. Reflections are very useful for linking a proposition with an equation that
+      evaluates to true/false. Can greatly simplify the proof and make our proof 
+      proceed.
+   2. The simplified version of this regex matcher is actually very interesting 
+      to solve.
+   3. I'm starting to get something about the so-called CH-Correspondance. I can 
+      see some relationships between propositions and executable code. 
+   4. There are two lemmas that are very obvious, but extremely tedius and hard to
+      prove manually. For these two lemmas, if I were to prove them, I have to test
+      2 ^ 16 cases, which is impossible to write down. I can see why we need proof
+      automation tools now.
+*)
+      (** [] *)
 
 (* Wed Jan 9 12:02:45 EST 2019 *)
