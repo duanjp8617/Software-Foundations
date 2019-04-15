@@ -271,8 +271,15 @@ Proof.
 Lemma t_update_shadow : forall (A : Type) (m : total_map A) x v1 v2,
     (x !-> v2 ; x !-> v1 ; m) = (x !-> v2 ; m).
 Proof.
-  intros. unfold t_update. Abort.
-(** [] *)
+  intros. unfold t_update. apply functional_extensionality.
+  intros. destruct (eqb_string x x0).
+  -
+    reflexivity.
+  -
+    reflexivity.
+Qed.
+
+  (** [] *)
 
 (** For the final two lemmas about total maps, it's convenient to use
     the reflection idioms introduced in chapter [IndProp].  We begin
@@ -287,7 +294,22 @@ Proof.
 Lemma eqb_stringP : forall x y : string,
     reflect (x = y) (eqb_string x y).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. destruct (eqb_string x y) as [] eqn:E.
+  -
+    apply ReflectT. unfold eqb_string in E. destruct (string_dec x y) as [|Hs].
+    +
+      apply e.
+    +
+      inversion E.
+  -
+    apply ReflectF. unfold eqb_string in E. destruct (string_dec x y) as [|Hs].
+    +
+      inversion E.
+    +
+      apply Hs.
+Qed.
+
+      
 (** [] *)
 
 (** Now, given [string]s [x1] and [x2], we can use the tactic
@@ -306,7 +328,14 @@ Proof.
 Theorem t_update_same : forall (A : Type) (m : total_map A) x,
     (x !-> m x ; m) = m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. unfold t_update. apply functional_extensionality. intros.
+  destruct (eqb_stringP x x0).
+  -
+    rewrite e. reflexivity.
+  -
+    reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, recommended (t_update_permute)  
@@ -322,7 +351,25 @@ Theorem t_update_permute : forall (A : Type) (m : total_map A)
     =
     (x2 !-> v2 ; x1 !-> v1 ; m).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. unfold t_update. apply functional_extensionality. intros.
+  destruct (eqb_stringP x1 x).
+  -
+    destruct (eqb_stringP x2 x).
+    +
+      rewrite e in H. rewrite e0 in H. assert(H': x = x).
+      { reflexivity. } apply H in H'. destruct H'.
+    +
+      reflexivity.
+  -
+    destruct (eqb_stringP x2 x).
+    +
+      reflexivity.
+    +
+      reflexivity.
+Qed.
+
+      
+  
 (** [] *)
 
 (* ################################################################# *)
