@@ -210,7 +210,9 @@ Proof. reflexivity. Qed.
 Lemma t_apply_empty : forall (A : Type) (x : string) (v : A),
     (_ !-> v) x = v.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. unfold t_empty. reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (t_update_eq)  
@@ -222,7 +224,15 @@ Proof.
 Lemma t_update_eq : forall (A : Type) (m : total_map A) x v,
     (x !-> v ; m) x = v.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. unfold t_update. unfold eqb_string. destruct (string_dec x x) as [] eqn:E.
+  -
+    reflexivity.
+  -
+    assert(H: x = x).
+    { reflexivity. }
+    apply n in H. destruct H.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (t_update_neq)  
@@ -235,7 +245,14 @@ Theorem t_update_neq : forall (A : Type) (m : total_map A) x1 x2 v,
     x1 <> x2 ->
     (x1 !-> v ; m) x2 = m x2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. unfold t_update. unfold eqb_string.
+  destruct (string_dec x1 x2) as [|Hs].
+  -
+    apply H in e. destruct e.
+  -
+    reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (t_update_shadow)  
@@ -246,10 +263,15 @@ Proof.
     to any key) as the simpler map obtained by performing just
     the second [update] on [m]: *)
 
+Lemma t_update_shadow_helper_1: forall (A B:Type) (f g:A->B) (x:A),
+    f x = g x -> f = g.
+Proof.
+  intros. inversion H. Abort.
+
 Lemma t_update_shadow : forall (A : Type) (m : total_map A) x v1 v2,
     (x !-> v2 ; x !-> v1 ; m) = (x !-> v2 ; m).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. unfold t_update. Abort.
 (** [] *)
 
 (** For the final two lemmas about total maps, it's convenient to use
