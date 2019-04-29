@@ -10,6 +10,7 @@
     reasoning facilities, so it may be useful to look at this material
     just after the [IndProp] chapter. *)
 
+
 Set Warnings "-notation-overridden,-parsing".
 From LF Require Export IndProp.
 
@@ -103,6 +104,22 @@ Proof.
     Show that the [total_relation] defined in (an exercise in)
     [IndProp] is not a partial function. *)
 
+Theorem total_relation_not_a_partial_function :
+  ~ (partial_function total_relation).
+Proof.
+  unfold not. unfold partial_function. intros Hc.
+  assert (H1: total_relation 0 1).
+  {
+    apply (tr 0 1).
+  }
+  assert (H2: total_relation 0 2).
+  {
+    apply (tr 0 2).
+  }
+  apply (Hc 0 1 2 H1) in H2.
+  discriminate.
+Qed.
+    
 (* FILL IN HERE 
 
     [] *)
@@ -111,6 +128,16 @@ Proof.
 
     Show that the [empty_relation] defined in (an exercise in)
     [IndProp] is a partial function. *)
+
+Theorem empty_relation_is_a_partial_function :
+  partial_function empty_relation.
+Proof.
+  unfold partial_function.
+  intros.
+  inversion H.
+  exfalso.
+  apply H1.
+Qed.
 
 (* FILL IN HERE 
 
@@ -169,7 +196,12 @@ Proof.
   unfold lt. unfold transitive.
   intros n m o Hnm Hmo.
   induction Hmo as [| m' Hm'o].
-    (* FILL IN HERE *) Admitted.
+  -
+    apply le_S. apply Hnm.
+  -
+    apply le_S. apply IHHm'o.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (lt_trans'')  
@@ -181,8 +213,18 @@ Theorem lt_trans'' :
 Proof.
   unfold lt. unfold transitive.
   intros n m o Hnm Hmo.
-  induction o as [| o'].
-  (* FILL IN HERE *) Admitted.
+  induction o as [| o']. 
+  -
+    inversion Hmo.
+  -
+    inversion Hmo.
+    +
+      apply le_S. rewrite H0 in Hnm. apply Hnm.
+    +
+      apply IHo' in H0. apply le_S. apply H0.
+Qed.
+
+
 (** [] *)
 
 (** The transitivity of [le], in turn, can be used to prove some facts
@@ -195,7 +237,7 @@ Proof.
   - apply le_S. apply le_n.
   - apply H.
 Qed.
-
+ 
 (** **** Exercise: 1 star, standard, optional (le_S_n)  *)
 Theorem le_S_n : forall n m,
   (S n <= S m) -> (n <= m).
