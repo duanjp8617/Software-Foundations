@@ -195,11 +195,12 @@ Proof.
   (* Prove this by induction on evidence that [m] is less than [o]. *)
   unfold lt. unfold transitive.
   intros n m o Hnm Hmo.
-  induction Hmo as [| m' Hm'o].
+  induction Hmo as [| m' Hm'o]. Show Proof.
   -
     apply le_S. apply Hnm.
   -
     apply le_S. apply IHHm'o.
+  Show Proof.
 Qed.
 
 (** [] *)
@@ -242,8 +243,15 @@ Qed.
 Theorem le_S_n : forall n m,
   (S n <= S m) -> (n <= m).
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  intros. inversion H.
+  -
+    apply le_n.
+  -
+    apply (le_Sn_le n m) in H1.
+    apply H1.
+Qed.
+
+    (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (le_Sn_n_inf)  
 
@@ -263,8 +271,22 @@ Proof.
 Theorem le_Sn_n : forall n,
   ~ (S n <= n).
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  induction n as [| n' IH].
+  -
+    unfold not. intros. inversion H.
+  -
+    unfold not. intros. inversion H.
+    +
+      apply IH. rewrite H1. apply le_n.
+    +
+      apply IH. apply le_trans with (S (S n')).
+      *
+        apply le_S. apply le_n.
+      *
+        apply H1.
+Qed.
+
+    (** [] *)
 
 (** Reflexivity and transitivity are the main concepts we'll need for
     later chapters, but, for a bit of additional practice working with
@@ -282,7 +304,15 @@ Definition symmetric {X: Type} (R: relation X) :=
 Theorem le_not_symmetric :
   ~ (symmetric le).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold not. unfold symmetric. intros.
+  assert(H' : 0 <= 1).
+  {
+    apply le_S. apply le_n.
+  }
+  apply (H 0 1) in H'.
+  inversion H'.
+Qed.
+
 (** [] *)
 
 (** A relation [R] is _antisymmetric_ if [R a b] and [R b a] together
@@ -293,10 +323,41 @@ Definition antisymmetric {X: Type} (R: relation X) :=
   forall a b : X, (R a b) -> (R b a) -> a = b.
 
 (** **** Exercise: 2 stars, standard, optional (le_antisymmetric)  *)
+Lemma le_antisymmetric_helper: forall a b, S a <= S b -> a <= b.
+Proof.
+  intros. inversion H.
+  -
+    apply le_n.
+  -
+    assert(H': a <= S a).
+    {
+      apply le_S. apply le_n.
+    }
+    apply (le_trans _ _ _ H') in H1.
+    apply H1.
+Qed.
+
+
 Theorem le_antisymmetric :
   antisymmetric le.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold antisymmetric.
+  intros. 
+  generalize dependent b.
+  induction a as [| a' IH].
+  -
+    intros. inversion H0. reflexivity.
+  -
+    intros b. destruct b as [|b'].
+    +
+      intros. inversion H.
+    +
+      intros. apply le_antisymmetric_helper in H. apply le_antisymmetric_helper in H0.
+      apply (IH _ H) in H0.
+      rewrite H0. reflexivity.
+Qed.
+
+      
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (le_step)  *)
@@ -305,7 +366,11 @@ Theorem le_step : forall n m p,
   m <= S p ->
   n <= p.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold lt. intros.
+  apply (le_trans _ _ _ H) in H0.
+  apply le_antisymmetric_helper in H0. apply H0.
+Qed.
+
 (** [] *)
 
 (* ----------------------------------------------------------------- *)
@@ -357,6 +422,7 @@ Inductive clos_refl_trans {A: Type} (R: relation A) : relation A :=
           (Hxy : clos_refl_trans R x y)
           (Hyz : clos_refl_trans R y z) :
           clos_refl_trans R x z.
+Check clos_refl_trans_ind.
 
 (** For example, the reflexive and transitive closure of the
     [next_nat] relation coincides with the [le] relation. *)
@@ -395,7 +461,7 @@ Inductive clos_refl_trans_1n {A : Type}
   | rt1n_trans (y z : A)
       (Hxy : R x y) (Hrest : clos_refl_trans_1n R y z) :
       clos_refl_trans_1n R x z.
-
+Check clos_refl_trans_1n_ind.                                           
 (** Our new definition of reflexive, transitive closure "bundles"
     the [rt_step] and [rt_trans] rules into the single rule step.
     The left-hand premise of this step is a single use of [R],
@@ -421,7 +487,19 @@ Lemma rsc_trans :
       clos_refl_trans_1n R y z ->
       clos_refl_trans_1n R x z.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction H as [x' | x' y' z' Hxy' Hrest' IHrest'].
+  -
+    apply H0.
+  -
+    apply IHrest' in H0.
+    apply rt1n_trans with y'.
+    +
+      apply Hxy'.
+    +
+      apply H0.
+Qed.
+
 (** [] *)
 
 (** Then we use these facts to prove that the two definitions of
@@ -433,7 +511,27 @@ Theorem rtc_rsc_coincide :
          forall (X:Type) (R: relation X) (x y : X),
   clos_refl_trans R x y <-> clos_refl_trans_1n R x y.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. split.
+  -
+    intros. induction H as [x' y' H' | x' | x' y' z' H1 IH1 H2 IH2].
+    +
+      apply rsc_R. apply H'.
+    +
+      apply rt1n_refl.
+    +
+      apply (rsc_trans _ _ _ _ _ IH1) in IH2. apply IH2.
+  -
+    intros. induction H as [x' | x' y' z' Hr Hrest IHrest].
+    +
+      apply rt_refl.
+    +
+      apply rt_trans with y'.
+      *
+        apply rt_step. apply Hr.
+      *
+        apply IHrest.
+Qed.                                            
+                           
 (** [] *)
 
 (* Wed Jan 9 12:02:46 EST 2019 *)
