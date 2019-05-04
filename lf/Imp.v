@@ -20,7 +20,7 @@
     _program equivalence_ and introduce _Hoare Logic_, a widely
     used logic for reasoning about imperative programs. *)
 
-Set Warnings "-notation-overridden,-parsing".
+(* Set Warnings "-notation-overridden,-parsing". *)
 From Coq Require Import Bool.Bool.
 From Coq Require Import Init.Nat.
 From Coq Require Import Arith.Arith.
@@ -188,7 +188,7 @@ Theorem optimize_0plus_sound: forall a,
 Proof.
   intros a. induction a.
   - (* ANum *) reflexivity.
-  - (* APlus *) destruct a1 eqn:Ea1.
+  - (* APlus *)simpl. destruct a1 eqn:Ea1.
     + (* a1 = ANum n *) destruct n eqn:En.
       * (* n = 0 *)  simpl. apply IHa2.
       * (* n <> 0 *) simpl. rewrite IHa2. reflexivity.
@@ -436,13 +436,27 @@ Qed.
     it is sound.  Use the tacticals we've just seen to make the proof
     as elegant as possible. *)
 
-Fixpoint optimize_0plus_b (b : bexp) : bexp
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint optimize_0plus_b (b : bexp) : bexp :=
+  match b with
+  | BTrue => BTrue
+  | BFalse => BFalse
+  | BEq a1 a2 => BEq (optimize_0plus a1) (optimize_0plus a2)
+  | BLe a1 a2 => BLe (optimize_0plus a1) (optimize_0plus a2)
+  | BNot b' => BNot (optimize_0plus_b b')
+  | BAnd b1 b2 => BAnd (optimize_0plus_b b1) (optimize_0plus_b b2)
+  end.
 
 Theorem optimize_0plus_b_sound : forall b,
   beval (optimize_0plus_b b) = beval b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b.
+  induction b;
+    try (reflexivity);
+    try (simpl; rewrite (optimize_0plus_sound a1); rewrite (optimize_0plus_sound a2); reflexivity).
+  - simpl. rewrite IHb. reflexivity.
+  - simpl. rewrite IHb1. rewrite IHb2. reflexivity.
+Qed.
+    
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (optimize)  
@@ -454,6 +468,73 @@ Proof.
     find it easiest to start small -- add just a single, simple
     optimization and its correctness proof -- and build up to
     something more interesting incrementially.)  *)
+
+Fixpoint optimize_sth (a:aexp) : aexp :=
+  match a with
+  | ANum n => ANum n
+  | APlus (ANum 0) e2 => optimize_sth e2
+  | APlus  e1 e2 => APlus  (optimize_sth e1) (optimize_sth e2)
+  | AMinus e1 e2 => AMinus (optimize_sth e1) (optimize_sth e2)
+  | AMult (ANum 1) e2 => optimize_sth e2
+  | AMult  e1 e2 => AMult  (optimize_sth e1) (optimize_sth e2)
+  end.
+
+Theorem optimize_sth_sound: forall a,
+  aeval (optimize_sth a) = aeval a.
+Proof.
+  intros a. induction a.
+  - (* ANum *) reflexivity.
+  - (* APlus *)simpl. destruct a1 eqn:Ea1.
+    + (* a1 = ANum n *) destruct n eqn:En.
+      * (* n = 0 *)  simpl. rewrite IHa2. reflexivity.
+      * (* n <> 0 *) simpl. rewrite IHa2. reflexivity.
+    + (* a1 = APlus a1_1 a1_2 *)
+      simpl. simpl in IHa1. rewrite IHa1.
+      rewrite IHa2. reflexivity.
+    + (* a1 = AMinus a1_1 a1_2 *)
+      simpl. simpl in IHa1. rewrite IHa1.
+      rewrite IHa2. reflexivity.
+    + (* a1 = AMult a1_1 a1_2 *)
+      simpl. simpl in IHa1. rewrite IHa1.
+      rewrite IHa2. reflexivity.
+  - (* AMinus *)
+    simpl. rewrite IHa1. rewrite IHa2. reflexivity.
+  - (* AMult *)
+    simpl. destruct a1 eqn:Ea1.
+    + destruct n eqn:En.
+      * reflexivity.
+      * destruct n0 eqn:En0.
+        {
+          simpl. rewrite IHa2. rewrite plus_0_r. reflexivity.
+        }
+        {
+          simpl. rewrite IHa2. reflexivity.
+        }
+    +
+      simpl. simpl in IHa1. rewrite IHa1. rewrite IHa2. reflexivity.
+    +
+      simpl. simpl in IHa1. rewrite IHa1. rewrite IHa2. reflexivity.
+    +
+      simpl. simpl in IHa1. rewrite IHa1. rewrite IHa2. reflexivity.
+Qed.
+
+Theorem optimize_sth_sound': forall a,
+    aeval (optimize_sth a) = aeval a.
+Proof.
+  intros a.
+  induction a;
+    try (reflexivity);
+    try (simpl; rewrite IHa1; rewrite IHa2; reflexivity).
+  - simpl. destruct a1 eqn:Ea1;
+             try (simpl; simpl in IHa1; rewrite IHa1; rewrite IHa2; reflexivity).
+    + destruct n eqn:En; simpl; rewrite IHa2; reflexivity.
+  - simpl. destruct a1 eqn:Ea1;
+             try (simpl; simpl in IHa1; rewrite IHa1; rewrite IHa2; reflexivity).
+    + destruct n eqn:En; try reflexivity.
+      * destruct n0 eqn:En0; try (simpl; rewrite IHa2).
+        rewrite plus_0_r. reflexivity.
+        reflexivity.     
+Qed.                      
 
 (* FILL IN HERE 
 
@@ -731,6 +812,19 @@ Inductive aevalR : aexp -> nat -> Prop :=
     relation (in inference rule notation). *)
 (* FILL IN HERE *)
 
+(* Inductive bevalR : bexp -> bool -> Prop := *)
+(* | E_BTrue : bevalR (BTrue) true *)
+(* | E_BFalse : bevalR (BFalse) false *)
+(* | E_BEq a1 a2 : bevalR (BEq a1 a2) ((aeval a1) =? (aeval a2)) *)
+(* | E_BLe a1 a2 : bevalR (BLe a1 a2) ((aeval a1) <? (aeval a2)) *)
+(* | E_BNot b bres : *)
+(*     bevalR b bres -> *)
+(*     bevalR (BNot b) (negb bres) *)
+(* | E_BAnd b1 b2 bres1 bres2: *)
+(*     bevalR b1 bres1 -> *)
+(*     bevalR b2 bres2 -> *)
+(*     bevalR (BAnd b1 b2) (andb bres1 bres2). *)
+
 (* Do not modify the following line: *)
 Definition manual_grade_for_beval_rules : option (nat*string) := None.
 (** [] *)
@@ -799,12 +893,66 @@ Qed.
 
 Inductive bevalR: bexp -> bool -> Prop :=
 (* FILL IN HERE *)
-.
+| E_BTrue : bevalR (BTrue) true
+| E_BFalse : bevalR (BFalse) false
+| E_BEq a1 a2 : bevalR (BEq a1 a2) ((aeval a1) =? (aeval a2))
+| E_BLe a1 a2 : bevalR (BLe a1 a2) ((aeval a1) <=? (aeval a2))
+| E_BNot b bres :
+    bevalR b bres ->
+    bevalR (BNot b) (negb bres)
+| E_BAnd b1 b2 bres1 bres2:
+    bevalR b1 bres1 ->
+    bevalR b2 bres2 ->
+    bevalR (BAnd b1 b2) (andb bres1 bres2).
 
 Lemma beval_iff_bevalR : forall b bv,
   bevalR b bv <-> beval b = bv.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. split.
+  -
+    intros. induction H.
+    +
+      reflexivity.
+    +
+      reflexivity.
+    +
+      simpl. reflexivity.
+    +
+      simpl. reflexivity.
+    +
+      simpl. rewrite IHbevalR. reflexivity.
+    +
+      simpl. rewrite IHbevalR1. rewrite IHbevalR2. reflexivity.
+  -
+    generalize dependent bv.    
+    induction b.
+    +
+      intros. simpl in H. rewrite <- H. apply E_BTrue.
+    +
+      intros. simpl in H. rewrite <- H. apply E_BFalse.
+    +
+      intros. simpl in H. rewrite <- H. apply E_BEq.
+    +
+      intros. simpl in H. rewrite <- H. apply E_BLe.
+    +
+      intros. simpl in H. rewrite <- H. apply E_BNot.
+      destruct (beval b).
+      *
+        apply (IHb true (eq_refl true)).
+      *
+        apply (IHb false (eq_refl false)).
+    +
+      intros. simpl in H. rewrite <- H. apply E_BAnd.
+      *
+        destruct (beval b1).
+        apply (IHb1 true (eq_refl true)).
+        apply (IHb1 false (eq_refl false)).
+      *
+        destruct (beval b2).
+        apply (IHb2 true (eq_refl true)).
+        apply (IHb2 false (eq_refl false)).
+Qed.
+
 (** [] *)
 
 End AExp.
@@ -1243,6 +1391,8 @@ Locate aexp.
 
 (* ================================================================= *)
 (** ** More Examples *)
+
+Locate "END".
 
 (** Assignment: *)
 
