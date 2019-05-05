@@ -1619,7 +1619,17 @@ Example ceval_example2:
     X ::= 0;; Y ::= 1;; Z ::= 2
   ]=> (Z !-> 2 ; Y !-> 1 ; X !-> 0).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply E_Seq with (X !-> 0).
+  -
+    apply E_Ass. reflexivity.
+  -
+    apply E_Seq with (Y !-> 1 ; X !-> 0).
+    +
+      apply E_Ass. reflexivity.
+    +
+      apply E_Ass. reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (pup_to_n)  
@@ -1629,15 +1639,39 @@ Proof.
    Prove that this program executes as intended for [X] = [2]
    (this is trickier than you might expect). *)
 
-Definition pup_to_n : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition pup_to_n : com :=
+  (Y ::= 0;;
+  WHILE ~(X = 0) DO
+    Y ::= Y + X;;
+    X ::= X - 1
+  END)%imp.
+
 
 Theorem pup_to_2_ceval :
   (X !-> 2) =[
     pup_to_n
   ]=> (X !-> 0 ; Y !-> 3 ; X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply E_Seq with (Y !-> 0 ; X !-> 2).
+  -
+    apply E_Ass. reflexivity.
+  -
+    apply E_WhileTrue with (X !-> 1; Y !-> 2; Y !-> 0; X !-> 2).
+    +
+      reflexivity.
+    +
+      apply E_Seq with (Y !-> 2; Y !-> 0; X !-> 2); apply E_Ass; reflexivity.
+    +
+      apply E_WhileTrue with (X !-> 0; Y !-> 3; X !-> 1; Y !-> 2; Y !-> 0; X !-> 2).
+      *
+        reflexivity.
+      *
+        apply E_Seq with (Y !-> 3; X !-> 1; Y !-> 2; Y !-> 0; X !-> 2); apply E_Ass; reflexivity.
+      *
+        apply E_WhileFalse. reflexivity.
+Qed.
+
+    
 (** [] *)
 
 (* ================================================================= *)
