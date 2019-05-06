@@ -1750,8 +1750,13 @@ Proof.
 (** **** Exercise: 3 stars, standard, recommended (XtimesYinZ_spec)  
 
     State and prove a specification of [XtimesYinZ]. *)
-
-(* FILL IN HERE *)
+Theorem XtimesYinZ_spec : forall st n1 n2 st',
+    st X = n1 ->
+    st Y = n2 ->
+    st =[ XtimesYinZ ]=> st' ->
+    st' Z = n1 * n2.                     
+Proof.
+  intros. inversion H1. subst. simpl. apply t_update_eq. Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_XtimesYinZ_spec : option (nat*string) := None.
@@ -1764,13 +1769,28 @@ Proof.
   intros st st' contra. unfold loop in contra.
   remember (WHILE true DO SKIP END)%imp as loopdef
            eqn:Heqloopdef.
-
+  induction contra.
+  -
+    discriminate.
+  -
+    discriminate.
+  -
+    discriminate.
+  -
+    discriminate.
+  -
+    discriminate.
+  -
+    inversion Heqloopdef. rewrite H1 in H. simpl in H. discriminate.
+  -
+    apply IHcontra2 in Heqloopdef. destruct Heqloopdef.
+Qed.
+                                                       
+                                                     
   (** Proceed by induction on the assumed derivation showing that
       [loopdef] terminates.  Most of the cases are immediately
       contradictory (and so can be solved in one step with
       [discriminate]). *)
-
-  (* FILL IN HERE *) Admitted.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (no_whiles_eqv)  
@@ -1799,13 +1819,71 @@ Close Scope imp_scope.
     while loops.  Then prove its equivalence with [no_whiles]. *)
 
 Inductive no_whilesR: com -> Prop :=
- (* FILL IN HERE *)
+| now_Skip : no_whilesR CSkip
+| now_Ass str ae : no_whilesR (CAss str ae)
+| now_Seq c1 c2 : no_whilesR c1 -> no_whilesR c2 -> no_whilesR (CSeq c1 c2)
+| now_If be c1 c2 : no_whilesR c1 -> no_whilesR c2 -> no_whilesR (CIf be c1 c2)
+| now_While be c : False -> no_whilesR (CWhile be c)
 .
 
 Theorem no_whiles_eqv:
    forall c, no_whiles c = true <-> no_whilesR c.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. split.
+  -
+    induction c.
+    +
+      intros. apply now_Skip.
+    +
+      intros. apply now_Ass.
+    +
+      intros. simpl in H.
+      destruct (no_whiles c1) eqn:E1.
+      *
+        destruct (no_whiles c2) eqn:E2.
+        {
+          apply now_Seq.          
+          apply (IHc1 (eq_refl true)).
+          apply (IHc2 (eq_refl true)).
+        }
+        {
+          simpl in H. discriminate.
+        }
+      *
+        simpl in H. discriminate.
+    +
+      intros. simpl in H. 
+      destruct (no_whiles c1) eqn:E1.
+      *
+        destruct (no_whiles c2) eqn:E2.
+        {
+          apply now_If.          
+          apply (IHc1 (eq_refl true)).
+          apply (IHc2 (eq_refl true)).
+        }
+        {
+          simpl in H. discriminate.
+        }
+      *
+        simpl in H. discriminate.
+    +
+      intros. simpl in H. discriminate.
+  -
+    intros. induction H.
+    +
+      reflexivity.
+    +
+      reflexivity.
+    +
+      simpl. rewrite IHno_whilesR1. rewrite IHno_whilesR2. reflexivity.
+    +
+      simpl. rewrite IHno_whilesR1. rewrite IHno_whilesR2. reflexivity.
+    +
+      destruct H.
+Qed.
+
+     
+      
 (** [] *)
 
 (** **** Exercise: 4 stars, standard (no_whiles_terminating)  
@@ -1815,8 +1893,44 @@ Proof.
 
     Use either [no_whiles] or [no_whilesR], as you prefer. *)
 
-(* FILL IN HERE *)
+Theorem no_whiles_terminating : forall c st,
+    no_whilesR c -> exists st', ceval c st st'.
+Proof.
+  intros.
+  generalize dependent st.
+  induction H.
+  -
+    intros. exists st. apply (E_Skip st).
+  -
+    intros. exists (t_update st str (aeval st ae)).
+    apply (E_Ass). reflexivity.
+  -
+    intros. destruct (IHno_whilesR1 st) as [st'].
+    destruct (IHno_whilesR2 st') as [st''].
+    exists st''.
+    apply (E_Seq) with st'.
+    +
+      apply H1.
+    +
+      apply H2.
+  -
+    intros. destruct (beval st be) eqn:E.
+    +
+      destruct (IHno_whilesR1 st) as [st'].
+      exists st'. apply E_IfTrue.
+      * apply E.
+      * apply H1.
+    +
+      destruct (IHno_whilesR2 st) as [st'].
+      exists st'. apply E_IfFalse.
+      * apply E.
+      * apply H1.  
+  -
+    destruct H.
+Qed.
 
+      
+    
 (* Do not modify the following line: *)
 Definition manual_grade_for_no_whiles_terminating : option (nat*string) := None.
 (** [] *)
