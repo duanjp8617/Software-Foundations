@@ -1997,37 +1997,64 @@ Inductive sinstr : Type :=
     immaterial what we do, since our compiler will never emit such a
     malformed program. *)
 
+Definition stack_ops stack ops :=
+  match stack, ops with
+  | n1 :: (n2 :: tl), SPlus => (n1 + n2) :: tl
+  | n1 :: (n2 :: tl), SMinus => (n2 - n1) :: tl
+  | n1 :: (n2 :: tl), SMult => (n1 * n2) :: tl
+  | _, _ => []
+  end.
+
 Fixpoint s_execute (st : state) (stack : list nat)
                    (prog : list sinstr)
-                 : list nat
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+  : list nat :=
+  match prog with
+  | (SPush n) :: tl => s_execute st (n :: stack) tl
+  | (SLoad x) :: tl => s_execute st (st x :: stack) tl
+  | ops :: tl => s_execute st (stack_ops stack ops) tl
+  | [] => stack
+  end.
 
 Example s_execute1 :
      s_execute empty_st []
        [SPush 5; SPush 3; SPush 1; SMinus]
    = [2; 5].
-(* FILL IN HERE *) Admitted.
+Proof.
+  simpl. reflexivity.
+Qed.
+
 
 Example s_execute2 :
      s_execute (X !-> 3) [3;4]
        [SPush 4; SLoad X; SMult; SPlus]
    = [15; 4].
-(* FILL IN HERE *) Admitted.
+Proof.
+  simpl. reflexivity.
+Qed.
 
 (** Next, write a function that compiles an [aexp] into a stack
     machine program. The effect of running the program should be the
     same as pushing the value of the expression on the stack. *)
 
-Fixpoint s_compile (e : aexp) : list sinstr
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
-
+Fixpoint s_compile (e : aexp) : list sinstr :=
+  match e with
+  | ANum n => [SPush n]
+  | AId str => [SLoad str]
+  | APlus ae1 ae2 => (s_compile ae1) ++ (s_compile ae2) ++ [SPlus]
+  | AMinus ae1 ae2 => (s_compile ae1) ++ (s_compile ae2) ++ [SMinus]
+  | AMult ae1 ae2 => (s_compile ae1) ++ (s_compile ae2) ++ [SMult]
+  end.
+                                     
 (** After you've defined [s_compile], prove the following to test
     that it works. *)
 
 Example s_compile1 :
   s_compile (X - (2 * Y))%imp
   = [SLoad X; SPush 2; SLoad Y; SMult; SMinus].
-(* FILL IN HERE *) Admitted.
+Proof.
+  simpl. reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced (stack_compiler_correct)  
@@ -2046,7 +2073,14 @@ Example s_compile1 :
 Theorem s_compile_correct : forall (st : state) (e : aexp),
   s_execute st [] (s_compile e) = [ aeval st e ].
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. generalize dependent st.
+  induction e.
+  -
+    intros. simpl. reflexivity.
+  -
+    intros. simpl. reflexivity.
+  -
+    intros. simpl. 
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (short_circuit)  
