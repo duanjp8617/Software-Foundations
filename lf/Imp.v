@@ -1997,21 +1997,24 @@ Inductive sinstr : Type :=
     immaterial what we do, since our compiler will never emit such a
     malformed program. *)
 
-Definition stack_ops stack ops :=
-  match stack, ops with
-  | n1 :: (n2 :: tl), SPlus => (n1 + n2) :: tl
-  | n1 :: (n2 :: tl), SMinus => (n2 - n1) :: tl
-  | n1 :: (n2 :: tl), SMult => (n1 * n2) :: tl
-  | _, _ => []
-  end.
-
 Fixpoint s_execute (st : state) (stack : list nat)
                    (prog : list sinstr)
   : list nat :=
   match prog with
   | (SPush n) :: tl => s_execute st (n :: stack) tl
   | (SLoad x) :: tl => s_execute st (st x :: stack) tl
-  | ops :: tl => s_execute st (stack_ops stack ops) tl
+  | SPlus as ops :: tl => match stack with
+                          | n1 :: (n2 :: s_tl) => s_execute st ((n1 + n2) :: s_tl) tl
+                          | _ => []
+                          end
+  | SMinus as ops :: tl => match stack with
+                           | n1 :: (n2 :: s_tl) => s_execute st ((n2 - n1) :: s_tl) tl
+                           | _ => []
+                           end
+  | SMult as ops :: tl => match stack with
+                          | n1 :: (n2 :: s_tl) => s_execute st ((n1 * n2) :: s_tl) tl
+                          | _ => []
+                          end
   | [] => stack
   end.
 
@@ -2070,6 +2073,127 @@ Qed.
     more general lemma to get a usable induction hypothesis; the main
     theorem will then be a simple corollary of this lemma. *)
 
+Inductive scompR : aexp -> (list sinstr) -> Prop :=
+| scomp_ANum n : scompR (ANum n) [SPush n]
+| scomp_AId str : scompR (AId str) [SLoad str]
+| scomp_APlus ae1 l1 ae2 l2 :
+    scompR ae1 l1 -> scompR ae2 l2 -> scompR (APlus ae1 ae2) (l1 ++ l2 ++ [SPlus])
+| scomp_AMinus ae1 l1 ae2 l2 :
+    scompR ae1 l1 -> scompR ae2 l2 -> scompR (AMinus ae1 ae2) (l1 ++ l2 ++ [SMinus])
+| scomp_AMult ae1 l1 ae2 l2 :
+    scompR ae1 l1 -> scompR ae2 l2 -> scompR (AMult ae1 ae2) (l1 ++ l2 ++ [SMult]).
+
+Definition instr_ops ops :=
+  match ops with
+  | SPlus => true
+  | SMinus => true
+  | SMult => true
+  | _ => false
+  end.
+
+Definition instr_ops_calc ops n1 n2 :=
+  match ops with
+  | SPlus => n1 + n2
+  | SMinus => n1 - n2
+  | SMult => n1 * n2
+  | _ => 0
+  end.
+
+Inductive sexecR : (list sinstr) -> (list nat) -> Prop :=
+| sexec_Empty : sexecR [] []
+| sexec_ShortCircuit1 ops : instr_ops ops = true -> sexecR [ops] []
+| sexec_ShortCircuit2 ops elem : instr_ops ops = true -> sexecR [elem;ops] []
+| sexec_ShortCircuitApp1 ops sl1 elem :
+    instr_ops ops = true ->
+    sexecR sl1 [elem] ->
+    sexecR (sl1 ++ [ops]) []
+| sexec_ShortCircuitApp2 sl1 sl2 :
+    sexecR sl1 [] -> sexecR (sl1 ++ sl2) []              
+| sexec_SPush n sl dl :
+    sexecR sl dl -> sexecR (sl ++ [SPush n]) (n :: dl)
+| sexec_SLoad st str sl dl :
+    sexecR sl dl -> sexecR (sl ++ [SLoad str]) ((st str) :: dl)
+| sexec_Calc ops sl1 dl1_hd sl2 dl2_hd :
+    instr_ops ops = true ->
+    sexecR sl1 [dl1_hd] ->
+    sexecR sl2 [dl2_hd] ->
+    sexecR (sl1 ++ sl2 ++ [ops]) [instr_ops_calc ops dl1_hd dl2_hd]
+| sexec_App sl1 dl1 sl2 dl2 :
+    sexecR sl1 dl1 ->
+    sexecR sl2 dl2 ->
+    sexecR (sl1 ++ sl2) (dl2 ++ dl1)
+.
+
+Theorem s_compile_correct_helper_1 : forall st e,
+    sexecR (s_compile e) [aeval st e].
+Proof.
+  intros. generalize dependent st.
+  induction e.
+  -
+    intros. simpl. apply (sexec_SPush n [] []).
+    apply sexec_Empty.
+  -
+    intros. simpl. apply (sexec_SLoad st x [] []).
+    apply sexec_Empty.
+  -
+    intros. simpl. apply (sexec_Calc SPlus).
+    + reflexivity.
+    + apply (IHe1 st).
+    + apply (IHe2 st).
+  -
+    intros. simpl. apply (sexec_Calc SMinus).
+    + reflexivity.
+    + apply (IHe1 st).
+    + apply (IHe2 st).
+  -
+    intros. simpl. apply (sexec_Calc SMult).
+    + reflexivity.
+    + apply (IHe1 st).
+    + apply (IHe2 st).
+Qed.
+
+(* Theorem s_compile_correct_helper_2_1 : forall st stack sl dl, *)
+(*     s_execute st [] sl =  *) 
+
+Theorem s_compile_correct_helper_2 : forall st sl dl,
+    sexecR sl dl -> s_execute st [] sl = dl.
+Proof.
+  intros. generalize dependent st. induction H.
+  -
+    intros. simpl. reflexivity.
+  -
+    intros. destruct ops;
+              try (simpl in H; discriminate);
+              try (simpl; reflexivity).
+  -
+    intros. destruct ops;
+              try (simpl in H; discriminate);
+              try (destruct elem; simpl; reflexivity).
+  -
+    generalize dependent elem.
+    induction sl1.
+    +
+      intros. rewrite app_nil_l. destruct ops;
+                                   try (simpl in H; discriminate);
+                                   try (simpl; reflexivity).
+    +
+      
+       
+    
+Theorem s_compile_correct_helper : forall (e : aexp) (l : list sinstr) (st : state),
+    scompR e l -> s_execute st [] l = [aeval st e].
+Proof.
+  intros. generalize dependent st.
+  induction H.
+  -
+    intros. simpl. reflexivity.
+  -
+    intros. simpl. reflexivity.
+  -
+    simpl.
+Abort.
+
+    
 Theorem s_compile_correct : forall (st : state) (e : aexp),
   s_execute st [] (s_compile e) = [ aeval st e ].
 Proof.
@@ -2080,7 +2204,8 @@ Proof.
   -
     intros. simpl. reflexivity.
   -
-    intros. simpl. 
+    intros. simpl.
+    Abort.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (short_circuit)  
