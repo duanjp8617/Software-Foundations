@@ -2073,25 +2073,16 @@ Qed.
     more general lemma to get a usable induction hypothesis; the main
     theorem will then be a simple corollary of this lemma. *)
 
-Inductive scompR : aexp -> (list sinstr) -> Prop :=
-| scomp_ANum n : scompR (ANum n) [SPush n]
-| scomp_AId str : scompR (AId str) [SLoad str]
-| scomp_APlus ae1 l1 ae2 l2 :
-    scompR ae1 l1 -> scompR ae2 l2 -> scompR (APlus ae1 ae2) (l1 ++ l2 ++ [SPlus])
-| scomp_AMinus ae1 l1 ae2 l2 :
-    scompR ae1 l1 -> scompR ae2 l2 -> scompR (AMinus ae1 ae2) (l1 ++ l2 ++ [SMinus])
-| scomp_AMult ae1 l1 ae2 l2 :
-    scompR ae1 l1 -> scompR ae2 l2 -> scompR (AMult ae1 ae2) (l1 ++ l2 ++ [SMult]).
 
-Definition instr_ops ops :=
-  match ops with
+Definition is_sinstr_ops sinstr :=
+  match sinstr with
   | SPlus => true
   | SMinus => true
   | SMult => true
   | _ => false
   end.
 
-Definition instr_ops_calc ops n1 n2 :=
+Definition calc_sinstr_ops ops n1 n2 :=
   match ops with
   | SPlus => n1 + n2
   | SMinus => n1 - n2
@@ -2099,101 +2090,106 @@ Definition instr_ops_calc ops n1 n2 :=
   | _ => 0
   end.
 
-Inductive sexecR : (list sinstr) -> (list nat) -> Prop :=
-| sexec_Empty : sexecR [] []
-| sexec_ShortCircuit1 ops : instr_ops ops = true -> sexecR [ops] []
-| sexec_ShortCircuit2 ops elem : instr_ops ops = true -> sexecR [elem;ops] []
-| sexec_ShortCircuitApp1 ops sl1 elem :
-    instr_ops ops = true ->
-    sexecR sl1 [elem] ->
-    sexecR (sl1 ++ [ops]) []
-| sexec_ShortCircuitApp2 sl1 sl2 :
-    sexecR sl1 [] -> sexecR (sl1 ++ sl2) []              
-| sexec_SPush n sl dl :
-    sexecR sl dl -> sexecR (sl ++ [SPush n]) (n :: dl)
-| sexec_SLoad st str sl dl :
-    sexecR sl dl -> sexecR (sl ++ [SLoad str]) ((st str) :: dl)
-| sexec_Calc ops sl1 dl1_hd sl2 dl2_hd :
-    instr_ops ops = true ->
-    sexecR sl1 [dl1_hd] ->
-    sexecR sl2 [dl2_hd] ->
-    sexecR (sl1 ++ sl2 ++ [ops]) [instr_ops_calc ops dl1_hd dl2_hd]
-| sexec_App sl1 dl1 sl2 dl2 :
-    sexecR sl1 dl1 ->
-    sexecR sl2 dl2 ->
-    sexecR (sl1 ++ sl2) (dl2 ++ dl1)
-.
+Inductive sexecR st : (list nat) -> (list sinstr) -> (list nat) -> Prop :=
+| sexec_Empty stl : sexecR st stl [] stl
+| sexec_SPush i_stl n insl o_stl :
+    sexecR st i_stl (SPush n :: insl) o_stl ->
+    sexecR st (n :: i_stl) insl o_stl
+| sexec_SLoad i_stl str insl o_stl :
+    sexecR st i_stl (SLoad str :: insl) o_stl ->
+    sexecR st (st str :: i_stl) insl o_stl
+| sexec_ShortCircuit1 sinstr insl :
+    is_sinstr_ops sinstr = true ->
+    sexecR st [] (sinstr :: insl) [] 
+| sexec_ShortCircuit2 n sinstr insl :
+    is_sinstr_ops sinstr = true ->
+    sexecR st [n] (sinstr :: insl) []
+| sexec_Ops n1 n2 i_stl sinstr insl o_stl :
+    is_sinstr_ops sinstr = true ->
+    sexecR st (n1 :: n2 :: i_stl) (sinstr :: insl) o_stl ->
+    sexecR st ((calc_sinstr_ops sinstr n2 n1) :: i_stl) insl o_stl.
 
-Theorem s_compile_correct_helper_1 : forall st e,
-    sexecR (s_compile e) [aeval st e].
+Theorem scc_helper_1 : forall st i_stl insl o_stl,
+    sexecR st i_stl insl o_stl -> s_execute st i_stl insl = o_stl.
 Proof.
-  intros. generalize dependent st.
-  induction e.
-  -
-    intros. simpl. apply (sexec_SPush n [] []).
-    apply sexec_Empty.
-  -
-    intros. simpl. apply (sexec_SLoad st x [] []).
-    apply sexec_Empty.
-  -
-    intros. simpl. apply (sexec_Calc SPlus).
-    + reflexivity.
-    + apply (IHe1 st).
-    + apply (IHe2 st).
-  -
-    intros. simpl. apply (sexec_Calc SMinus).
-    + reflexivity.
-    + apply (IHe1 st).
-    + apply (IHe2 st).
-  -
-    intros. simpl. apply (sexec_Calc SMult).
-    + reflexivity.
-    + apply (IHe1 st).
-    + apply (IHe2 st).
-Qed.
-
-(* Theorem s_compile_correct_helper_2_1 : forall st stack sl dl, *)
-(*     s_execute st [] sl =  *) 
-
-Theorem s_compile_correct_helper_2 : forall st sl dl,
-    sexecR sl dl -> s_execute st [] sl = dl.
-Proof.
-  intros. generalize dependent st. induction H.
-  -
-    intros. simpl. reflexivity.
-  -
-    intros. destruct ops;
-              try (simpl in H; discriminate);
-              try (simpl; reflexivity).
-  -
-    intros. destruct ops;
-              try (simpl in H; discriminate);
-              try (destruct elem; simpl; reflexivity).
-  -
-    generalize dependent elem.
-    induction sl1.
-    +
-      intros. rewrite app_nil_l. destruct ops;
-                                   try (simpl in H; discriminate);
-                                   try (simpl; reflexivity).
-    +
-      
-       
-    
-Theorem s_compile_correct_helper : forall (e : aexp) (l : list sinstr) (st : state),
-    scompR e l -> s_execute st [] l = [aeval st e].
-Proof.
-  intros. generalize dependent st.
+  intros.
   induction H.
   -
     intros. simpl. reflexivity.
   -
-    intros. simpl. reflexivity.
+    intros. simpl in IHsexecR. apply IHsexecR.
   -
-    simpl.
-Abort.
+    intros. simpl in IHsexecR. apply IHsexecR.
+  -
+    simpl. destruct sinstr0; try (reflexivity); try (simpl in H; discriminate).
+  -
+    simpl. destruct sinstr0; try (reflexivity); try (simpl in H; discriminate).
+  -
+    simpl. simpl in IHsexecR. destruct sinstr0; try (simpl in H; discriminate).
+    +
+      simpl. rewrite plus_comm. apply IHsexecR.
+    +
+      simpl. apply IHsexecR.
+    +
+      simpl. rewrite mult_comm. apply IHsexecR.
+Qed.
 
-    
+Theorem scc_helper_2 : forall st i_stl insl o_stl,
+    s_execute st i_stl insl = o_stl -> sexecR st i_stl insl o_stl.
+Proof.
+  intros. generalize dependent i_stl. generalize dependent insl.
+  induction o_stl.
+  -
+    intros.
+Admitted.
+  
+Theorem scc_helper_3 : forall st i_stl insl n o_stl insl',
+    sexecR st i_stl insl (n :: o_stl) ->
+    s_execute st i_stl (insl ++ insl') = s_execute st (n :: o_stl) insl'. 
+Proof.
+  intros. remember (n :: o_stl) as o_stl'.
+  induction H.
+  -
+    reflexivity.
+  -
+    simpl in IHsexecR. apply IHsexecR in Heqo_stl'. apply Heqo_stl'.
+  -
+    simpl in IHsexecR. apply IHsexecR in Heqo_stl'. apply Heqo_stl'.
+  -
+    inversion Heqo_stl'.
+  -
+    inversion Heqo_stl'.
+  -
+    simpl in IHsexecR. apply IHsexecR in Heqo_stl'.
+    destruct sinstr0; try (simpl in H; discriminate).
+    +
+      simpl. rewrite plus_comm. apply Heqo_stl'.
+    +
+      simpl. apply Heqo_stl'.
+    +
+      simpl. rewrite mult_comm. apply Heqo_stl'.
+Qed.    
+
+Theorem scc_helper_4 : forall st n o_stl i_stl insl,
+    sexecR st [] insl (n :: o_stl) ->
+    s_execute st i_stl insl = (n :: o_stl) ++ i_stl.
+Proof.
+  intros. remember [] as i_stl'. remember (n :: o_stl) as o_stl'.
+  induction H.
+  -
+    rewrite Heqi_stl' in Heqo_stl'. inversion Heqo_stl'.
+  -
+    inversion Heqi_stl'.
+  -
+    inversion Heqi_stl'.
+  -
+    inversion Heqo_stl'.
+  -
+    inversion Heqo_stl'.
+  -
+    inversion Heqi_stl'.
+Qed.
+
 Theorem s_compile_correct : forall (st : state) (e : aexp),
   s_execute st [] (s_compile e) = [ aeval st e ].
 Proof.
@@ -2204,9 +2200,41 @@ Proof.
   -
     intros. simpl. reflexivity.
   -
-    intros. simpl.
-    Abort.
-(** [] *)
+    intros.
+    apply (scc_helper_2 st _ _ _)  in IHe1.
+    apply (scc_helper_2 st _ _ _) in IHe2.
+    apply (scc_helper_3 _ _ _ _ _ (s_compile e2)) in IHe1.
+    apply (scc_helper_4 _ _ _ [aeval st e1] _) in IHe2.
+    rewrite IHe2 in IHe1.
+    apply (scc_helper_2 st _ _ _) in IHe1.
+    apply (scc_helper_3 _ _ _ _ _ [SPlus]) in IHe1.
+    simpl. rewrite <- app_assoc in IHe1. rewrite IHe1.
+    simpl. rewrite plus_comm. reflexivity.
+  -
+    intros.
+    apply (scc_helper_2 st _ _ _)  in IHe1.
+    apply (scc_helper_2 st _ _ _) in IHe2.
+    apply (scc_helper_3 _ _ _ _ _ (s_compile e2)) in IHe1.
+    apply (scc_helper_4 _ _ _ [aeval st e1] _) in IHe2.
+    rewrite IHe2 in IHe1.
+    apply (scc_helper_2 st _ _ _) in IHe1.
+    apply (scc_helper_3 _ _ _ _ _ [SMinus]) in IHe1.
+    simpl. rewrite <- app_assoc in IHe1. rewrite IHe1.
+    reflexivity.
+  -
+    intros.
+    apply (scc_helper_2 st _ _ _)  in IHe1.
+    apply (scc_helper_2 st _ _ _) in IHe2.
+    apply (scc_helper_3 _ _ _ _ _ (s_compile e2)) in IHe1.
+    apply (scc_helper_4 _ _ _ [aeval st e1] _) in IHe2.
+    rewrite IHe2 in IHe1.
+    apply (scc_helper_2 st _ _ _) in IHe1.
+    apply (scc_helper_3 _ _ _ _ _ [SMult]) in IHe1.
+    simpl. rewrite <- app_assoc in IHe1. rewrite IHe1.
+    simpl. rewrite mult_comm. reflexivity.
+Qed.
+
+    (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (short_circuit)  
 
