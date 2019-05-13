@@ -2137,6 +2137,41 @@ Qed.
 (* FILL IN HERE 
 
     [] *)
+Fixpoint beval' (st : state) (b : bexp) : bool :=
+  match b with
+  | BTrue       => true
+  | BFalse      => false
+  | BEq a1 a2   => (aeval st a1) =? (aeval st a2)
+  | BLe a1 a2   => (aeval st a1) <=? (aeval st a2)
+  | BNot b1     => negb (beval' st b1)
+  | BAnd b1 b2  => match (beval' st b1) with
+                   | true => beval' st b2
+                   | false => false
+                   end                    
+  end.
+
+Theorem beval'_equal_beval : forall st b,
+    beval' st b = beval st b.
+Proof.
+  intros. induction b.
+  -
+    reflexivity.
+  -
+    reflexivity.
+  -
+    reflexivity.
+  -
+    reflexivity.
+  -
+    simpl. rewrite IHb. reflexivity.
+  -
+    simpl. destruct (beval' st b1) eqn:E.
+    +
+      rewrite <- IHb1. reflexivity.
+    +
+      rewrite <- IHb1. reflexivity.
+Qed.
+              
 
 Module BreakImp.
 (** **** Exercise: 4 stars, advanced (break_imp)  
@@ -2252,9 +2287,39 @@ Reserved Notation "st '=[' c ']=>' st' '/' s"
 
 Inductive ceval : com -> state -> result -> state -> Prop :=
   | E_Skip : forall st,
-      st =[ CSkip ]=> st / SContinue
-  (* FILL IN HERE *)
-
+      ceval CSkip st SContinue st
+  | E_Break : forall st,
+      ceval CBreak st SBreak st
+  | E_Ass : forall st x ae n,
+      aeval st ae = n ->
+      ceval (CAss x ae) st SContinue (t_update st x n)
+  | E_Seq_1 : forall c1 c2 st st',
+      ceval c1 st SBreak st' ->
+      ceval (CSeq c1 c2) st SBreak st'
+  | E_Seq_2 : forall c1 c2 st st' st'' res,
+      ceval c1 st SContinue st' ->
+      ceval c2 st' res st'' ->
+      ceval (CSeq c1 c2) st res st''
+  | E_If_true : forall be c1 c2 st res st',
+      beval st be = true ->
+      ceval c1 st res st' ->
+      ceval (CIf be c1 c2) st res st'
+  | E_If_false : forall be c1 c2 st res st',
+      beval st be = false ->
+      ceval c2 st res st' ->
+      ceval (CIf be c1 c2) st res st'
+  | E_While_false : forall st be c,
+      beval st be = false ->
+      ceval (CWhile be c) st SContinue st
+  | E_While_true_1 : forall be c st st',
+      beval st be = true ->
+      ceval c st SBreak st' ->
+      ceval (CWhile be c) st SContinue st'
+  | E_While_true_2 : forall be c st st' st'',
+      beval st be = true ->
+      ceval c st SContinue st' ->
+      ceval (CWhile be c) st' SContinue st'' ->
+      ceval (CWhile be c) st SContinue st''                                           
   where "st '=[' c ']=>' st' '/' s" := (ceval c st s st').
 
 (** Now prove the following properties of your definition of [ceval]: *)
@@ -2263,20 +2328,34 @@ Theorem break_ignore : forall c st st' s,
      st =[ BREAK;; c ]=> st' / s ->
      st = st'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. inversion H.
+  -
+    inversion H5. reflexivity.
+  -
+    inversion H2.
+Qed.
 
 Theorem while_continue : forall b c st st' s,
   st =[ WHILE b DO c END ]=> st' / s ->
   s = SContinue.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. inversion H.
+  -
+    reflexivity.
+  -
+    reflexivity.
+  -
+    reflexivity.
+Qed.
 
 Theorem while_stops_on_break : forall b c st st',
   beval st b = true ->
   st =[ c ]=> st' / SBreak ->
   st =[ WHILE b DO c END ]=> st' / SContinue.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply E_While_true_1.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced, optional (while_break_true)  *)
@@ -2285,7 +2364,31 @@ Theorem while_break_true : forall b c st st',
   beval st' b = true ->
   exists st'', st'' =[ c ]=> st' / SBreak.
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros. remember (WHILE b DO c END) as c'.
+  remember SContinue as res.
+  induction H.
+  -
+    inversion Heqc'.
+  -
+    inversion Heqc'.
+  -
+    inversion Heqc'.
+  -
+    inversion Heqc'.
+  -
+    inversion Heqc'.
+  -
+    inversion Heqc'.
+  -
+    inversion Heqc'.
+  -
+    inversion Heqc'. rewrite <- H2 in H0. rewrite H0 in H. discriminate.
+  -
+    inversion Heqc'. rewrite H4 in H1. exists st. apply H1.
+  -
+    apply (IHceval2 Heqc' Heqres H0).
+Qed.    
+      
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced, optional (ceval_deterministic)  *)
@@ -2294,7 +2397,26 @@ Theorem ceval_deterministic: forall (c:com) st st1 st2 s1 s2,
      st =[ c ]=> st2 / s2 ->
      st1 = st2 /\ s1 = s2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. generalize dependent st2. generalize dependent s2. induction H.
+  -
+    intros. inversion H0. split.
+    + reflexivity.
+    + reflexivity.
+  -
+    intros. inversion H0. split.
+    + reflexivity.
+    + reflexivity.
+  -
+    intros. inversion H0. rewrite H in H6. rewrite H6. split.
+    + reflexivity.
+    + reflexivity.
+  -
+    intros. inversion H0.
+    +
+      apply IHceval in H6. apply H6.
+    +
+      subst.
+      
 
 (** [] *)
 End BreakImp.
