@@ -2187,7 +2187,9 @@ Inductive com : Type :=
   | CAss (x : string) (a : aexp)
   | CSeq (c1 c2 : com)
   | CIf (b : bexp) (c1 c2 : com)
-  | CWhile (b : bexp) (c : com).
+  | CWhile (b : bexp) (c : com)
+  | CFor (c_init : com) (b : bexp) (c_body : com) (c_iter : com).
+
 
 Notation "'SKIP'" :=
   CSkip.
@@ -2319,7 +2321,25 @@ Inductive ceval : com -> state -> result -> state -> Prop :=
       beval st be = true ->
       ceval c st SContinue st' ->
       ceval (CWhile be c) st' SContinue st'' ->
-      ceval (CWhile be c) st SContinue st''                                           
+      ceval (CWhile be c) st SContinue st''
+  | E_For_1 : forall c_init st st' be c_body c_iter,
+      ceval c_init st SBreak st' ->
+      ceval (CFor c_init be c_body c_iter) st SContinue st'
+  | E_For_false : forall c_init st st' be c_body c_iter,
+      ceval c_init st SContinue st' ->
+      beval st' be = false ->
+      ceval (CFor c_init be c_body c_iter) st SContinue st'
+  | E_For_true_1 : forall c_init st st' st'' be c_body c_iter,
+      ceval c_init st SContinue st' ->
+      beval st' be = true ->
+      ceval (CSeq c_body c_iter) st' SBreak st'' ->
+      ceval (CFor c_init be c_body c_iter) st SContinue st''
+  | E_For_true_2 : forall c_init st st' st'' st''' be c_body c_iter,
+      ceval c_init st SContinue st' ->
+      beval st' be = true ->
+      ceval (CSeq c_body c_iter) st' SContinue st'' ->
+      ceval (CWhile be (CSeq c_body c_iter)) st'' SContinue st''' -> 
+      ceval (CFor c_init be c_body c_iter) st SContinue st'''      
   where "st '=[' c ']=>' st' '/' s" := (ceval c st s st').
 
 (** Now prove the following properties of your definition of [ceval]: *)
@@ -2387,6 +2407,14 @@ Proof.
     inversion Heqc'. rewrite H4 in H1. exists st. apply H1.
   -
     apply (IHceval2 Heqc' Heqres H0).
+  -
+    inversion Heqc'.
+  -
+    inversion Heqc'.
+  -
+    inversion Heqc'.
+  -
+    inversion Heqc'.
 Qed.    
       
 (** [] *)
