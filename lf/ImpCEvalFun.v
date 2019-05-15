@@ -210,23 +210,45 @@ Definition test_ceval (st:state) (c:com) :=
    [X] (inclusive: [1 + 2 + ... + X]) in the variable [Y].  Make sure
    your solution satisfies the test that follows. *)
 
-Definition pup_to_n : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition pup_to_n : com :=
+  (Y ::= 0 ;;
+   WHILE ~(0 = X) DO
+   (Y ::= Y + X ;;
+                X ::= X - 1)
+   END).
 
-(* 
 
 Example pup_to_n_1 :
   test_ceval (X !-> 5) pup_to_n
   = Some (0, 15, 0).
 Proof. reflexivity. Qed.
 
-    [] *)
-
 (** **** Exercise: 2 stars, standard, optional (peven)  
 
     Write an [Imp] program that sets [Z] to [0] if [X] is even and
     sets [Z] to [1] otherwise.  Use [test_ceval] to test your
     program. *)
+
+Definition is_fuck_even : com :=
+  ( (WHILE (2 <= X) DO
+      (X ::= X - 2)
+      END) ;;
+           TEST (X = 0)
+           THEN Z ::= 1
+                        ELSE Z ::= 0
+                                    FI ;; X ::= 0 ;; Y ::= 0
+
+           ).
+Example is_even_5 :
+  test_ceval (X !-> 3) is_fuck_even
+  = Some (0, 0, 0).
+Proof. reflexivity. Qed.
+
+Example is_even_6 :
+  test_ceval (X !-> 6) is_fuck_even
+  = Some (0, 0, 1).
+Proof. reflexivity. Qed.
+
 
 (* FILL IN HERE 
 
@@ -363,7 +385,52 @@ Theorem ceval__ceval_step: forall c st st',
 Proof.
   intros c st st' Hce.
   induction Hce.
-  (* FILL IN HERE *) Admitted.
+  -
+    exists 1. simpl. reflexivity.
+  -
+    exists 1. simpl. rewrite H. reflexivity.
+  -
+    inversion IHHce1 as [i1 E1]. clear IHHce1.
+    inversion IHHce2 as [i2 E2]. clear IHHce2.
+    destruct (i1 <=? i2) eqn:IE.
+    +
+      apply leb_complete in IE.
+      apply (ceval_step_more _ _ _ _ _ IE) in E1.
+      exists (S i2). simpl. rewrite E1. apply E2.
+    +
+      apply leb_complete_conv in IE.
+      assert(IE' : i2 <= i1).
+      {
+        omega.
+      }
+      apply (ceval_step_more _ _ _ _ _ IE') in E2.
+      exists (S i1). simpl. rewrite E1. apply E2.
+  -
+    inversion IHHce as [i E]. clear IHHce. exists (S i).
+    simpl. rewrite H. apply E.
+  -
+    inversion IHHce as [i E]. clear IHHce. exists (S i).
+    simpl. rewrite H. apply E.
+  -
+    exists 1. simpl. rewrite H. reflexivity.
+  -
+    inversion IHHce1 as [i1 E1]. clear IHHce1.
+    inversion IHHce2 as [i2 E2]. clear IHHce2.
+    destruct (i1 <=? i2) eqn:IE.
+    +
+      apply leb_complete in IE.
+      apply (ceval_step_more _ _ _ _ _ IE) in E1.
+      exists (S i2). simpl. rewrite H. rewrite E1. apply E2.
+    +
+      apply leb_complete_conv in IE.
+      assert(IE' : i2 <= i1).
+      {
+        omega.
+      }
+      apply (ceval_step_more _ _ _ _ _ IE') in E2.
+      exists (S i1). simpl. rewrite H. rewrite E1. apply E2.
+Qed.                                                       
+              
 (** [] *)
 
 Theorem ceval_and_ceval_step_coincide: forall c st st',
