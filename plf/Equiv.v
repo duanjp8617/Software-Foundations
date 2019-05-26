@@ -1,6 +1,6 @@
 (** * Equiv: Program Equivalence *)
 
-Set Warnings "-notation-overridden,-parsing".
+(* Set Warnings "-notation-overridden,-parsing". *)
 From PLF Require Import Maps.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Arith.Arith.

@@ -20,7 +20,7 @@
     _program equivalence_ and introduce _Hoare Logic_, a widely
     used logic for reasoning about imperative programs. *)
 
-Set Warnings "-notation-overridden,-parsing".
+(* Set Warnings "-notation-overridden,-parsing". *)
 From Coq Require Import Bool.Bool.
 From Coq Require Import Init.Nat.
 From Coq Require Import Arith.Arith.
