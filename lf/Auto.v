@@ -661,5 +661,12 @@ Proof. eauto. Qed.
     [auto] most of the time, only switching to the [e] variants when
     the ordinary variants don't do the job. *)
 
+(* All the chapters of logical foundations have been read. I still got several key points that I haven't really figure
+   out yet. These key points include: 
+   1. How to write the tokenizer and monadic parser. Which is in ImpParser.v
+   2. The coq extraction mechanism is still too complicated for me.
+   3. The notation of relation, including trasitivity, reflexivity, etc. I can't fully grasp what it means to be a relation.
+   4. I still can't fully solve all the exercises. One exercise that really bothers me is to prove the evaluation determinism for
+      the IMP language with CONTINUE and BREAK. *)
 
 (* Wed Jan 9 12:02:47 EST 2019 *)
