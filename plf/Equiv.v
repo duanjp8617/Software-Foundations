@@ -76,7 +76,7 @@ Qed.
 Theorem bequiv_example: bequiv (X - X = 0)%imp true.
 Proof.
   intros st. unfold beval.
-  rewrite aequiv_example. reflexivity.
+  rewrite aequiv_example. reflexivity. 
 Qed.
 
 (** For commands, the situation is a little more subtle.  We can't
@@ -128,7 +128,18 @@ Theorem skip_right : forall c,
     (c ;; SKIP)
     c.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros c st st'.
+  split; intros H.
+  -
+    inversion H. subst.
+    inversion H5. subst.
+    assumption.
+  -
+    apply E_Seq with st'.
+    assumption.
+    apply E_Skip.
+Qed.
+
 (** [] *)
 
 (** Similarly, here is a simple transformation that optimizes [TEST]
@@ -216,8 +227,24 @@ Theorem TEST_false : forall b c1 c2,
     (TEST b THEN c1 ELSE c2 FI)
     c2.
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  intros b c1 c2 H1.
+  split; intros H.
+  -
+    inversion H.
+    +
+      unfold bequiv in H1. rewrite (H1 _) in H6.
+      simpl in H6. discriminate.
+    +
+      assumption.
+  -
+    apply E_IfFalse.
+    +
+      unfold bequiv in H1. rewrite H1. reflexivity.
+    +
+      assumption.
+Qed.
+      
+  (** [] *)
 
 (** **** Exercise: 3 stars, standard (swap_if_branches)  
 
@@ -229,7 +256,30 @@ Theorem swap_if_branches : forall b e1 e2,
     (TEST b THEN e1 ELSE e2 FI)
     (TEST BNot b THEN e2 ELSE e1 FI).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b e1 e2.
+  split; intros H.
+  -                  
+    inversion H.
+    +
+      apply E_IfFalse.
+      * simpl. rewrite H5. reflexivity.
+      * apply H6.
+    +
+      apply E_IfTrue.
+      * simpl. rewrite H5. reflexivity.
+      * apply H6.
+  -
+    inversion H.
+    +
+      apply E_IfFalse.
+      * simpl in H5. destruct (beval st b) eqn:Eq. inversion H5. reflexivity.
+      * assumption.
+    +
+      apply E_IfTrue.
+      * simpl in H5. destruct (beval st b) eqn:Eq. reflexivity. inversion H5.
+      * assumption.
+Qed.
+        
 (** [] *)
 
 (** For [WHILE] loops, we can give a similar pair of theorems.  A loop
@@ -332,8 +382,20 @@ Theorem WHILE_true : forall b c,
     (WHILE b DO c END)
     (WHILE true DO SKIP END).
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  intros b c H1.
+  split; intros H2.
+  -
+    apply (WHILE_true_nonterm b c st st') in H1.
+    apply H1 in H2. inversion H2.
+  -
+    assert (bequiv BTrue BTrue) as H3.
+    { unfold bequiv. intros. reflexivity. }
+    apply (WHILE_true_nonterm BTrue SKIP st st') in H3.
+    apply H3 in H2.
+    inversion H2.
+Qed.
+
+    (** [] *)
 
 (** A more interesting fact about [WHILE] commands is that any number
     of copies of the body can be "unrolled" without changing meaning.
@@ -367,7 +429,26 @@ Proof.
 Theorem seq_assoc : forall c1 c2 c3,
   cequiv ((c1;;c2);;c3) (c1;;(c2;;c3)).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros c1 c2 c3.
+  split; intros H.
+  -
+    inversion H. subst. inversion H2. subst.
+    eapply E_Seq.
+    + apply H3.
+    + eapply E_Seq.
+      * apply H7.
+      * assumption.
+  -
+    inversion H. subst. inversion H5. subst.
+    eapply E_Seq.
+    + eapply E_Seq.
+      * apply H2.
+      * apply H3.
+    +
+      apply H7.
+Qed.
+
+      
 (** [] *)
 
 (** Proving program properties involving assignments is one place
@@ -397,7 +478,18 @@ Theorem assign_aequiv : forall (x : string) e,
   aequiv x e ->
   cequiv SKIP (x ::= e).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros x e H1.
+  split; intros H2; inversion H2; subst.
+  -
+    assert(st' =[ x ::= e ]=> (x !-> aeval st' e; st')) as H3.
+    apply E_Ass. reflexivity.
+    unfold aequiv in H1. rewrite <- H1 in H3. simpl in H3.
+    rewrite t_update_same in H3. assumption.
+  -
+    unfold aequiv in H1. rewrite <- H1. simpl.
+    rewrite t_update_same. apply E_Skip.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 2 stars, standard (equiv_classes)  *)
