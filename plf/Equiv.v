@@ -553,8 +553,8 @@ Definition prog_i : com :=
     X ::= Y + 1
   END)%imp.
 
-Definition equiv_classes : list (list com)
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition equiv_classes : list (list com) :=
+  [[prog_c; prog_h]; [prog_f; prog_g]; [prog_a; prog_d]; [prog_b; prog_e]; [prog_i]].
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_equiv_classes : option (nat*string) := None.
@@ -724,7 +724,7 @@ Proof.
   split; intros Hce.
   - (* -> *)
     remember (WHILE b1 DO c1 END)%imp as cwhile
-      eqn:Heqcwhile.
+                                           eqn:Heqcwhile.  
     induction Hce; inversion Heqcwhile; subst.
     + (* E_WhileFalse *)
       apply E_WhileFalse. rewrite <- Hb1e. apply H.
@@ -749,12 +749,32 @@ Proof.
       * (* subsequent loop execution *)
         apply IHHce2. reflexivity.  Qed.
 
+
+
 (** **** Exercise: 3 stars, standard, optional (CSeq_congruence)  *)
 Theorem CSeq_congruence : forall c1 c1' c2 c2',
   cequiv c1 c1' -> cequiv c2 c2' ->
   cequiv (c1;;c2) (c1';;c2').
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold cequiv.
+  intros.
+  split; intros H1.
+  -
+    inversion H1. subst. apply (H _ _) in H4.
+    apply E_Seq with st'0.
+    +
+      apply H4.
+    +
+      apply H0. assumption.
+  -
+    inversion H1. subst. apply (H _ _) in H4.
+    apply E_Seq with st'0.
+    +
+      apply H4.
+    +
+      apply H0. assumption.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (CIf_congruence)  *)
@@ -763,7 +783,29 @@ Theorem CIf_congruence : forall b b' c1 c1' c2 c2',
   cequiv (TEST b THEN c1 ELSE c2 FI)
          (TEST b' THEN c1' ELSE c2' FI).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold bequiv. unfold cequiv. intros.
+  split; intros.
+  -
+    inversion H2; subst.
+    +    
+      apply E_IfTrue.
+      * rewrite <- H. assumption.
+      * apply H0. assumption.
+    +
+      apply E_IfFalse.
+      * rewrite <- H. assumption.
+      * apply H1. assumption.
+  -
+    inversion H2; subst.
+    +    
+      apply E_IfTrue.
+      * rewrite H. assumption.
+      * apply H0. assumption.
+    +
+      apply E_IfFalse.
+      * rewrite H. assumption.
+      * apply H1. assumption.
+Qed.        
 (** [] *)
 
 (** For example, here are two equivalent programs and a proof of their
@@ -1129,7 +1171,15 @@ Proof.
        become constants after folding *)
       simpl. destruct (n =? n0); reflexivity.
   - (* BLe *)
-    (* FILL IN HERE *) admit.
+    simpl.
+    remember (fold_constants_aexp a1) as a1' eqn:Heqa1'.
+    remember (fold_constants_aexp a2) as a2' eqn:Heqa2'.
+    replace (aeval st a1) with (aeval st a1') by
+       (subst a1'; rewrite <- fold_constants_aexp_sound; reflexivity).
+    replace (aeval st a2) with (aeval st a2') by
+        (subst a2'; rewrite <- fold_constants_aexp_sound; reflexivity).
+    destruct a1'; destruct a2'; try reflexivity.
+    simpl. destruct (n <=? n0); simpl; reflexivity.
   - (* BNot *)
     simpl. remember (fold_constants_bexp b) as b' eqn:Heqb'.
     rewrite IHb.
@@ -1140,7 +1190,7 @@ Proof.
     remember (fold_constants_bexp b2) as b2' eqn:Heqb2'.
     rewrite IHb1. rewrite IHb2.
     destruct b1'; destruct b2'; reflexivity.
-(* FILL IN HERE *) Admitted.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (fold_constants_com_sound)  
@@ -1171,7 +1221,61 @@ Proof.
       apply trans_cequiv with c2; try assumption.
       apply TEST_false; assumption.
   - (* WHILE *)
-    (* FILL IN HERE *) Admitted.
+    destruct (fold_constants_bexp b) eqn:Eq.
+    +
+      split; intros.
+      * assert (forall st, beval st b = beval st (fold_constants_bexp b)) as H'.
+        { apply fold_constants_bexp_sound. }
+        rewrite Eq in H'.
+        assert (~ (st =[ WHILE b DO c END ]=> st')) as H''.
+        {
+          apply WHILE_true_nonterm.
+          unfold bequiv.
+          intros.
+          apply (H' st0).
+        }
+        apply H'' in H. destruct H.
+      *
+        assert (forall st, beval st b = beval st (fold_constants_bexp b)) as H'.
+        { apply fold_constants_bexp_sound. }
+        rewrite Eq in H'.
+        assert (~ (st =[ WHILE BTrue DO SKIP END ]=> st')) as H''.
+        {
+          apply WHILE_true_nonterm.
+          unfold bequiv.
+          intros.
+          reflexivity.
+        }
+        apply H'' in H. destruct H.
+    +            
+      split; intros; inversion H; subst.
+      * apply E_Skip.
+      * assert (beval st b = beval st (fold_constants_bexp b)) as H'.
+        { apply fold_constants_bexp_sound. }
+        rewrite H2 in H'. rewrite Eq in H'. inversion H'.
+      * 
+        apply E_WhileFalse. 
+        assert (beval st' b = beval st' (fold_constants_bexp b)) as H'.
+        { apply fold_constants_bexp_sound. }
+        rewrite H'. rewrite Eq. reflexivity.
+    +
+      apply CWhile_congruence.
+      * rewrite <- Eq. apply fold_constants_bexp_sound.
+      * apply IHc.
+    +
+      apply CWhile_congruence.
+      * rewrite <- Eq. apply fold_constants_bexp_sound.
+      * apply IHc.
+    +
+      apply CWhile_congruence.
+      * rewrite <- Eq. apply fold_constants_bexp_sound.
+      * apply IHc.
+    +
+      apply CWhile_congruence.
+      * rewrite <- Eq. apply fold_constants_bexp_sound.
+      * apply IHc.
+Qed.      
+           
 (** [] *)
 
 (* ----------------------------------------------------------------- *)
