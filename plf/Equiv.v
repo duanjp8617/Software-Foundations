@@ -1327,6 +1327,273 @@ Qed.
 
     [] *)
 
+Fixpoint optimize_0plus_aexp (e:aexp) :aexp :=
+  match e with
+  | ANum n => ANum n
+  | AId str => AId str
+  | APlus (ANum 0) (ANum 0) => ANum 0
+  | APlus (ANum 0) a2 => a2
+  | APlus a1 (ANum 0) => a1
+  | APlus a1 a2 => APlus (optimize_0plus_aexp a1) (optimize_0plus_aexp a2)
+  | AMinus a1 a2 => AMinus (optimize_0plus_aexp a1) (optimize_0plus_aexp a2)
+  | AMult a1 a2 => AMult (optimize_0plus_aexp a1) (optimize_0plus_aexp a2)
+  end.
+
+Fixpoint optimize_0plus_bexp (e:bexp) :bexp :=
+  match e with
+  | BTrue => BTrue
+  | BFalse => BFalse
+  | BEq a1 a2 => BEq (optimize_0plus_aexp a1) (optimize_0plus_aexp a2)
+  | BLe a1 a2 => BLe (optimize_0plus_aexp a1) (optimize_0plus_aexp a2)
+  | BNot b1 => BNot (optimize_0plus_bexp b1)
+  | BAnd b1 b2 => BAnd (optimize_0plus_bexp b1) (optimize_0plus_bexp b2)
+  end.
+
+Fixpoint optimize_0plus_com (c:com) :com :=
+  match c with
+  | CSkip => CSkip
+  | CAss str a1 => CAss str (optimize_0plus_aexp a1)
+  | CSeq c1 c2 => CSeq (optimize_0plus_com c1) (optimize_0plus_com c2)
+  | CIf b1 c1 c2 =>
+    CIf (optimize_0plus_bexp b1) (optimize_0plus_com c1) (optimize_0plus_com c2)
+  | CWhile b1 c1 =>
+    CWhile (optimize_0plus_bexp b1) (optimize_0plus_com c1)
+  end.                            
+
+Theorem optimize_0plus_aexp_sound :
+  atrans_sound optimize_0plus_aexp.
+Proof.
+  unfold atrans_sound. unfold aequiv.
+  intros a. induction a.
+  -
+    reflexivity.
+  -
+    reflexivity.
+  -
+    intros st. simpl.
+    destruct a1.
+    +
+      destruct a2; (try (destruct n; reflexivity)).
+      *
+        destruct n.
+        destruct n0. reflexivity. reflexivity.
+        destruct n0. apply plus_comm. reflexivity.        
+      *
+        destruct n. reflexivity.
+        remember (optimize_0plus_aexp (S n)) as a1.
+        remember (optimize_0plus_aexp (a2_1 + a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        destruct n. reflexivity.
+        remember (optimize_0plus_aexp (S n)) as a1.
+        remember (optimize_0plus_aexp (a2_1 - a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        destruct n. reflexivity.
+        remember (optimize_0plus_aexp (S n)) as a1.
+        remember (optimize_0plus_aexp (a2_1 * a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+    +
+      destruct a2.
+      *
+        destruct n. apply plus_comm. 
+        remember (optimize_0plus_aexp x) as a1.
+        remember (optimize_0plus_aexp (S n)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp x) as a1.
+        remember (optimize_0plus_aexp x0) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp x) as a1.
+        remember (optimize_0plus_aexp (a2_1 + a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp x) as a1.
+        remember (optimize_0plus_aexp (a2_1 - a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp x) as a1.
+        remember (optimize_0plus_aexp (a2_1 * a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+    +
+      destruct a2.
+      *
+        destruct n. apply plus_comm.
+        remember (optimize_0plus_aexp (a1_1 + a1_2)) as a1.
+        remember (optimize_0plus_aexp (S n)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp (a1_1 + a1_2)) as a1.
+        remember (optimize_0plus_aexp x) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp (a1_1 + a1_2)) as a1.
+        remember (optimize_0plus_aexp (a2_1 + a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp (a1_1 + a1_2)) as a1.
+        remember (optimize_0plus_aexp (a2_1 - a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp (a1_1 + a1_2)) as a1.
+        remember (optimize_0plus_aexp (a2_1 * a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+    +
+      destruct a2.
+      *
+        destruct n. apply plus_comm.
+        simpl. simpl in IHa1. rewrite IHa1. reflexivity.
+      *
+        remember (optimize_0plus_aexp (a1_1 - a1_2)) as a1.
+        remember (optimize_0plus_aexp x) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp (a1_1 - a1_2)) as a1.
+        remember (optimize_0plus_aexp (a2_1 + a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp (a1_1 - a1_2)) as a1.
+        remember (optimize_0plus_aexp (a2_1 - a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp (a1_1 - a1_2)) as a1.
+        remember (optimize_0plus_aexp (a2_1 * a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+    +
+      destruct a2.
+      *
+        destruct n. apply plus_comm.
+        simpl. simpl in IHa1. rewrite IHa1. reflexivity.
+      *
+        remember (optimize_0plus_aexp (a1_1 * a1_2)) as a1.
+        remember (optimize_0plus_aexp x) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp (a1_1 * a1_2)) as a1.
+        remember (optimize_0plus_aexp (a2_1 + a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp (a1_1 * a1_2)) as a1.
+        remember (optimize_0plus_aexp (a2_1 - a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+      *
+        remember (optimize_0plus_aexp (a1_1 * a1_2)) as a1.
+        remember (optimize_0plus_aexp (a2_1 * a2_2)) as a2.
+        simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+  -
+    intros st. simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+  -
+    intros st. simpl. rewrite <- IHa1. rewrite <- IHa2. reflexivity.
+Qed.    
+      
+Theorem optimize_0plus_bexp_sound :
+  btrans_sound optimize_0plus_bexp.
+Proof.
+  unfold btrans_sound. unfold bequiv. intros b st.
+  induction b.
+  -
+    reflexivity.
+  -
+    reflexivity.
+  -
+    simpl. intros.
+    assert(H1 : aeval st a1 = aeval st (optimize_0plus_aexp a1)).
+    {
+      apply optimize_0plus_aexp_sound.
+    }
+    assert(H2 : aeval st a2 = aeval st (optimize_0plus_aexp a2)).
+    {
+      apply optimize_0plus_aexp_sound.
+    }
+    rewrite <- H1. rewrite <- H2. reflexivity.
+  -
+    simpl. intros.
+    assert(H1 : aeval st a1 = aeval st (optimize_0plus_aexp a1)).
+    {
+      apply optimize_0plus_aexp_sound.
+    }
+    assert(H2 : aeval st a2 = aeval st (optimize_0plus_aexp a2)).
+    {
+      apply optimize_0plus_aexp_sound.
+    }
+    rewrite <- H1. rewrite <- H2. reflexivity.
+  -
+    simpl. rewrite IHb. reflexivity.
+  -
+    simpl. rewrite IHb1. rewrite IHb2. reflexivity.
+Qed.
+
+Theorem optimize_0plus_com_sound:
+  ctrans_sound optimize_0plus_com.
+Proof.
+  unfold ctrans_sound. unfold cequiv. split.
+  -
+    intros H. induction H.
+    +
+      simpl. apply E_Skip.
+    +
+      simpl. apply E_Ass.
+      rewrite <- H. symmetry. apply optimize_0plus_aexp_sound.
+    +
+      simpl. apply E_Seq with st'. assumption.  assumption.
+    +
+      simpl. apply E_IfTrue. rewrite <- H. symmetry. apply optimize_0plus_bexp_sound.
+      assumption.
+    +
+      simpl. apply E_IfFalse. rewrite <- H. symmetry. apply optimize_0plus_bexp_sound.
+      assumption.
+    +
+      simpl. apply E_WhileFalse. rewrite <- H. symmetry. apply optimize_0plus_bexp_sound.
+    +
+      simpl. apply E_WhileTrue with st'.
+      rewrite <- H. symmetry. apply optimize_0plus_bexp_sound.
+      assumption. simpl in IHceval2. assumption.
+  -
+    intros H. remember (optimize_0plus_com c) as c'. generalize dependent c.
+    induction H(* ; destruct c; inversion Heqc'; subst *).
+    +
+      intros; destruct c; inversion Heqc'; subst.
+      apply E_Skip.
+    +
+      intros; destruct c; inversion Heqc'; subst.
+      apply E_Ass. apply optimize_0plus_aexp_sound.
+    +
+      intros; destruct c; inversion Heqc'. apply E_Seq with st'.
+      apply IHceval1. assumption. apply IHceval2. assumption.
+    +
+      intros; destruct c; inversion Heqc'; subst.
+      apply E_IfTrue. rewrite <- H. apply optimize_0plus_bexp_sound.
+      apply IHceval. reflexivity.
+    +
+      intros; destruct c; inversion Heqc'; subst.
+      apply E_IfFalse. rewrite <- H. apply optimize_0plus_bexp_sound.
+      apply IHceval. reflexivity.
+    +
+      intros. destruct c0; inversion Heqc'; simpl in Heqc'; inversion Heqc'; subst.
+      apply E_WhileFalse. rewrite <- H. apply optimize_0plus_bexp_sound.
+    +
+      intros. destruct c0; inversion Heqc'; simpl in Heqc'; inversion Heqc'; subst.
+      apply E_WhileTrue with st'. 
+      rewrite <- H. apply optimize_0plus_bexp_sound.
+      apply IHceval1. reflexivity.
+      apply IHceval2. reflexivity.
+Qed.
+
+Definition optimize_foldc_0plus :=
+  fun (c:com) => optimize_0plus_com (fold_constants_com c).
+  
+Theorem optimze_foldc_0plus_sound:
+  ctrans_sound optimize_foldc_0plus.
+Proof.
+  unfold ctrans_sound. unfold optimize_foldc_0plus. intros c.
+  assert(H1: cequiv c (fold_constants_com c)).
+  apply fold_constants_com_sound.
+  assert(H2: cequiv (fold_constants_com c) (optimize_0plus_com (fold_constants_com c))).
+  { remember (fold_constants_com c) as H2. apply optimize_0plus_com_sound.}
+    apply (trans_cequiv _ _ _ H1 H2).
+Qed.
+
 (* ################################################################# *)
 (** * Proving Inequivalence *)
 
