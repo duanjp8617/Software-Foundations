@@ -1590,8 +1590,11 @@ Proof.
   assert(H1: cequiv c (fold_constants_com c)).
   apply fold_constants_com_sound.
   assert(H2: cequiv (fold_constants_com c) (optimize_0plus_com (fold_constants_com c))).
-  { remember (fold_constants_com c) as H2. apply optimize_0plus_com_sound.}
-    apply (trans_cequiv _ _ _ H1 H2).
+  {
+    remember (fold_constants_com c) as H2.
+    apply optimize_0plus_com_sound.
+  }
+  apply (trans_cequiv _ _ _ H1 H2).
 Qed.
 
 (* ################################################################# *)
@@ -1613,6 +1616,7 @@ Qed.
 (** We will see in a moment that it is not, but it is worthwhile
     to pause, now, and see if you can find a counter-example on your
     own. *)
+(* X may be updated and hence becomes different than the substituant *)
 
 (** More formally, here is the function that substitutes an arithmetic
     expression [u] for each occurrence of a given variable [x] in
@@ -1685,6 +1689,7 @@ Definition subst_equiv_property := forall x1 x2 a1 a2,
     where [st2 = (Y !-> 2 ; X !-> 1)].  But [st1 <> st2], which is a
     contradiction, since [ceval] is deterministic!  [] *)
 
+(* This teaches you how to find out a counter example to disprove the proposition. *)
 Theorem subst_inequiv :
   ~ subst_equiv_property.
 Proof.
@@ -1750,7 +1755,22 @@ Lemma aeval_weakening : forall x st a ni,
   var_not_used_in_aexp x a ->
   aeval (x !-> ni ; st) a = aeval st a.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros x st a ni H.
+  induction H.
+  -
+    reflexivity.
+  -
+    simpl. apply t_update_neq. assumption.
+  -
+    simpl. rewrite IHvar_not_used_in_aexp1. rewrite IHvar_not_used_in_aexp2.
+    reflexivity.
+  -
+    simpl. rewrite IHvar_not_used_in_aexp1. rewrite IHvar_not_used_in_aexp2.
+    reflexivity.
+  -
+    simpl. rewrite IHvar_not_used_in_aexp1. rewrite IHvar_not_used_in_aexp2.
+    reflexivity.
+Qed.
 
 (** Using [var_not_used_in_aexp], formalize and prove a correct version
     of [subst_equiv_property]. *)
@@ -1758,6 +1778,24 @@ Proof.
 (* FILL IN HERE 
 
     [] *)
+
+Theorem subst_equiv_correct :
+  forall a2 a1 x1 x2, var_not_used_in_aexp x1 a1 ->
+                      cequiv (x1 ::= a1;; x2 ::= a2)
+                             (x1 ::= a1;; x2 ::= subst_aexp x1 a1 a2).
+Proof.
+  intros a2. induction a2.
+  -
+    intros. simpl. apply refl_cequiv.
+  -
+    intros. simpl. destruct (eqb_string x1 x) eqn:Eq.
+    +
+      unfold cequiv. split.
+      *
+        
+    
+    
+  
 
 (** **** Exercise: 3 stars, standard (inequiv_exercise)  
 
