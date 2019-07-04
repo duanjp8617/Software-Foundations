@@ -1792,10 +1792,13 @@ Proof.
     +
       unfold cequiv. split.
       *
+        (* x = x1 *)
+        apply eqb_string_true_iff in Eq. intros.
+        (*  *)
+        inversion H0. subst. inversion H3. subst. inversion H6. subst. 
+        apply E_Seq with (x !-> aeval st a1; st).
+        (*  *)
         
-    
-    
-  
 
 (** **** Exercise: 3 stars, standard (inequiv_exercise)  
 
