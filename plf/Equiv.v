@@ -1784,7 +1784,7 @@ Theorem subst_equiv_correct :
                       cequiv (x1 ::= a1;; x2 ::= a2)
                              (x1 ::= a1;; x2 ::= subst_aexp x1 a1 a2).
 Proof.
-  intros a2. induction a2.
+  intros. induction a2.
   -
     intros. simpl. apply refl_cequiv.
   -
@@ -1798,8 +1798,37 @@ Proof.
         inversion H0. subst. inversion H3. subst. inversion H6. subst. 
         apply E_Seq with (x !-> aeval st a1; st).
         (*  *)
-        
-
+        apply E_Ass. reflexivity.
+        (*  *)
+        apply E_Ass. simpl.
+        apply (aeval_weakening x st a1 (aeval st a1)) in H.
+        rewrite H. symmetry. apply t_update_eq.
+      *
+        intros. inversion H0; subst.
+        apply E_Seq with st'0.
+        (* ceval c1 st st'*)
+        assumption.
+        (* ceval c2 st' st'' *)
+        inversion H3; subst. inversion H6; subst.
+        apply E_Ass. apply eqb_string_true_iff in Eq. rewrite <- Eq. simpl.
+        apply (aeval_weakening x1 st a1 (aeval st a1)) in H.
+        rewrite H. apply t_update_eq.
+    +
+      apply refl_cequiv.
+  -
+    intros. simpl. split.
+    +
+      intros. inversion H0; subst.
+      inversion H3; subst. remember (x1 !-> aeval st a1; st) as st_key.
+      (* destruct (IHa2_1 st (x2 !-> aeval st_key a2_1)) in IHa2_1. *)
+      (* destruct (IHa2_2 st (x2 !-> aeval st_key a2_2)) in IHa2_2. *)
+      apply E_Seq with st_key.
+      (*  *)
+      assumption.
+      (*  *)
+      apply E_Ass.
+      
+    
 (** **** Exercise: 3 stars, standard (inequiv_exercise)  
 
     Prove that an infinite loop is not equivalent to [SKIP] *)
