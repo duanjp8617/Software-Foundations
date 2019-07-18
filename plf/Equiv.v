@@ -1779,55 +1779,70 @@ Qed.
 
     [] *)
 
+Lemma aeval_refl_after_subst : forall x st1 a1 st2 a2,
+    var_not_used_in_aexp x a1 ->
+    st2 = (x !-> (aeval st1 a1); st1) -> 
+    aeval st2 (subst_aexp x a1 a2) = aeval st2 a2.
+Proof.
+  intros. induction a2.
+  -
+    reflexivity.
+  - 
+    destruct (eqb_string x x0) eqn:Eq.
+    +
+      apply eqb_string_true_iff in Eq. rewrite <- Eq. simpl.
+      destruct (eqb_string x x).
+      * rewrite H0. rewrite (t_update_eq _ st1 x (aeval st1 a1)).
+        apply (aeval_weakening x st1 a1 (aeval st1 a1)) in H.
+        assumption.
+      *
+        reflexivity.
+    +
+      simpl. destruct (eqb_string x x0).
+      *
+        inversion Eq.
+      *
+        reflexivity.
+  -
+    simpl. rewrite IHa2_1. rewrite IHa2_2. reflexivity.
+  -
+    simpl. rewrite IHa2_1. rewrite IHa2_2. reflexivity.
+  -
+    simpl. rewrite IHa2_1. rewrite IHa2_2. reflexivity.
+Qed.
+
 Theorem subst_equiv_correct :
   forall a2 a1 x1 x2, var_not_used_in_aexp x1 a1 ->
                       cequiv (x1 ::= a1;; x2 ::= a2)
                              (x1 ::= a1;; x2 ::= subst_aexp x1 a1 a2).
 Proof.
-  intros. induction a2.
+  intros. unfold cequiv. split.
   -
-    intros. simpl. apply refl_cequiv.
+    intros. inversion H0; subst.
+    apply E_Seq with st'0.
+    (*  *)
+    assumption.
+    (*  *)
+    inversion H6; subst.
+    apply E_Ass.
+    inversion H3; subst.
+    remember (x1 !-> aeval st a1; st) as st2.
+    apply (aeval_refl_after_subst x1 st a1 st2 a2) in H.
+    assumption. assumption. 
   -
-    intros. simpl. destruct (eqb_string x1 x) eqn:Eq.
-    +
-      unfold cequiv. split.
-      *
-        (* x = x1 *)
-        apply eqb_string_true_iff in Eq. intros.
-        (*  *)
-        inversion H0. subst. inversion H3. subst. inversion H6. subst. 
-        apply E_Seq with (x !-> aeval st a1; st).
-        (*  *)
-        apply E_Ass. reflexivity.
-        (*  *)
-        apply E_Ass. simpl.
-        apply (aeval_weakening x st a1 (aeval st a1)) in H.
-        rewrite H. symmetry. apply t_update_eq.
-      *
-        intros. inversion H0; subst.
-        apply E_Seq with st'0.
-        (* ceval c1 st st'*)
-        assumption.
-        (* ceval c2 st' st'' *)
-        inversion H3; subst. inversion H6; subst.
-        apply E_Ass. apply eqb_string_true_iff in Eq. rewrite <- Eq. simpl.
-        apply (aeval_weakening x1 st a1 (aeval st a1)) in H.
-        rewrite H. apply t_update_eq.
-    +
-      apply refl_cequiv.
-  -
-    intros. simpl. split.
-    +
-      intros. inversion H0; subst.
-      inversion H3; subst. remember (x1 !-> aeval st a1; st) as st_key.
-      (* destruct (IHa2_1 st (x2 !-> aeval st_key a2_1)) in IHa2_1. *)
-      (* destruct (IHa2_2 st (x2 !-> aeval st_key a2_2)) in IHa2_2. *)
-      apply E_Seq with st_key.
-      (*  *)
-      assumption.
-      (*  *)
-      apply E_Ass.
-      
+    intros. inversion H0; subst.
+    apply E_Seq with st'0.
+    (*  *)
+    assumption.
+    (*  *)
+    inversion H6; subst.
+    apply E_Ass.
+    inversion H3; subst.
+    symmetry.
+    remember (x1 !-> aeval st a1; st) as st2.
+    apply (aeval_refl_after_subst x1 st a1 st2 a2) in H.
+    assumption. assumption.
+Qed.      
     
 (** **** Exercise: 3 stars, standard (inequiv_exercise)  
 
