@@ -1851,8 +1851,18 @@ Qed.
 Theorem inequiv_exercise:
   ~ cequiv (WHILE true DO SKIP END) SKIP.
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  unfold not. intros.
+  remember (X !-> 1) as st.  
+  destruct (H st st).
+  assert (H': ceval SKIP st st).
+  apply E_Skip.
+  apply H1 in H'.
+  apply (WHILE_true_nonterm true SKIP st st).
+  apply refl_bequiv.
+  assumption.
+Qed.
+
+  (** [] *)
 
 (* ################################################################# *)
 (** * Extended Exercise: Nondeterministic Imp *)
@@ -1961,9 +1971,9 @@ Inductive ceval : com -> state -> state -> Prop :=
       st  =[ c ]=> st' ->
       st' =[ WHILE b DO c END ]=> st'' ->
       st  =[ WHILE b DO c END ]=> st''
-(* FILL IN HERE *)
-
-  where "st =[ c ]=> st'" := (ceval c st st').
+  | E_Havoc : forall st x n,
+      st =[ CHavoc x ]=> (x !-> n; st)                                     
+where "st =[ c ]=> st'" := (ceval c st st').
 Close Scope imp_scope.
 
 (** As a sanity check, the following claims should be provable for
@@ -1971,12 +1981,18 @@ Close Scope imp_scope.
 
 Example havoc_example1 : empty_st =[ (HAVOC X)%imp ]=> (X !-> 0).
 Proof.
-(* FILL IN HERE *) Admitted.
+  apply E_Havoc.
+Qed.
+
 
 Example havoc_example2 :
   empty_st =[ (SKIP;; HAVOC Z)%imp ]=> (Z !-> 42).
 Proof.
-(* FILL IN HERE *) Admitted.
+  apply E_Seq with empty_st.
+  apply E_Skip.
+  apply E_Havoc.
+Qed.
+
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_Check_rule_for_HAVOC : option (nat*string) := None.
@@ -2003,9 +2019,38 @@ Definition pYX :=
 (** If you think they are equivalent, prove it. If you think they are
     not, prove that. *)
 
+Lemma pXY_equiv_pYX : cequiv pXY pYX.
+Proof.
+  unfold cequiv. split.
+  -
+    unfold pXY. unfold pYX. intros. 
+    inversion H; subst. inversion H2; subst. inversion H5; subst.
+    assert(H': (Y !-> n0; X !-> n; st) = (X !-> n; Y !-> n0; st)).
+    {
+      apply t_update_permute. unfold not. intros Contra. inversion Contra.
+    }
+    apply E_Seq with (Y !-> n0; st).
+    apply E_Havoc.
+    rewrite H'. apply E_Havoc.
+  -
+    unfold pXY. unfold pYX. intros. 
+    inversion H; subst. inversion H2; subst. inversion H5; subst.
+    assert(H': (Y !-> n; X !-> n0; st) = (X !-> n0; Y !-> n; st)).
+    {
+      apply t_update_permute. unfold not. intros Contra. inversion Contra.
+    }
+    apply E_Seq with (X !-> n0; st).
+    apply E_Havoc.
+    rewrite <- H'. apply E_Havoc.
+Qed.
+
+
 Theorem pXY_cequiv_pYX :
   cequiv pXY pYX \/ ~cequiv pXY pYX.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  left. apply pXY_equiv_pYX.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (havoc_copy)  
