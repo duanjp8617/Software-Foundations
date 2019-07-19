@@ -2067,9 +2067,45 @@ Definition pcopy :=
     are not, then prove that.  (Hint: You may find the [assert] tactic
     useful.) *)
 
+Theorem ptwice_nequiv_pcopy: ~ (cequiv ptwice pcopy).
+Proof.
+  unfold not. unfold cequiv. unfold ptwice. unfold pcopy.
+  intros Contra.
+  assert(H': empty_st =[ (HAVOC X;; HAVOC Y) %imp ]=> (Y !-> 4; X !-> 3; empty_st)).
+  {
+    apply E_Seq with (X !-> 3; empty_st).
+    apply E_Havoc.
+    apply E_Havoc.
+  }
+  destruct (Contra empty_st (Y !-> 4; X !-> 3; empty_st)).
+  apply H in H'.
+  inversion H'; subst. inversion H3; subst. inversion H6; subst.
+  assert(T1: (Y !-> aeval (X !-> n) X; X !-> n) Y = n).
+  {
+    simpl. apply t_update_eq.
+  }
+  assert(T2: (Y !-> aeval (X !-> n) X; X !-> n) X = n).
+  {
+    apply t_update_neq. unfold not. intros Contra'. inversion Contra'.
+  }
+  rewrite H7 in T1. rewrite H7 in T2.
+  assert(T3: (Y !-> 4; X !-> 3) Y = 4).
+  {
+    apply t_update_eq.
+  }
+  assert(T4: (Y !-> 4; X !-> 3) X = 3).
+  {
+    apply t_update_neq. unfold not. intros Contra'. inversion Contra'.
+  }
+  rewrite T3 in T1. rewrite T4 in T2. rewrite <- T1 in T2. inversion T2.
+Qed.  
+  
 Theorem ptwice_cequiv_pcopy :
   cequiv ptwice pcopy \/ ~cequiv ptwice pcopy.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  right. apply ptwice_nequiv_pcopy.
+Qed.
+
 (** [] *)
 
 (** The definition of program equivalence we are using here has some
