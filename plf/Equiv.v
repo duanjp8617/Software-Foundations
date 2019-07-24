@@ -2138,15 +2138,90 @@ Definition p2 : com :=
     either they loop forever, or they terminate in the same state they
     started in.  We can capture the termination behavior of [p1] and
     [p2] individually with these lemmas: *)
+(* WHILE_true_nonterm 
+forall (b : bexp) (c : Imp.com) (st st' : state),
+       bequiv b BTrue -> ~ st =[ WHILE b DO c END ]=> st'
+ *)
 
+Lemma p1_may_diverge_helper_1 : forall n,
+    n <> 0 -> n + 1 <> 0.
+Proof.
+  intros n. induction n.
+  -
+    unfold not. intros. simpl in H0. inversion H0.
+  -
+    unfold not. intros. simpl in H0. inversion H0.
+Qed.
+
+
+Lemma p1_may_diverge_helper : forall st st',
+    st X <> 0 -> ceval ((HAVOC Y;; X ::= X + 1)%imp) st st' -> st' X <> 0.
+Proof.
+  intros. remember (HAVOC Y;; X ::= X + 1)%imp.
+  induction H0; inversion Heqc.
+  -
+    rewrite H1 in H0_. inversion H0_; subst.
+    inversion H0_0.
+    assert(H': (X !-> n0; Y !-> n; st) X = n0).
+    {
+      apply t_update_eq.
+    }
+    rewrite H'. rewrite <- H4. simpl.
+    assert(H'': (Y !-> n; st) X = st X).
+    {
+      apply t_update_neq.
+      unfold not. intros Contra. inversion Contra.
+    }
+    rewrite H''.
+    apply p1_may_diverge_helper_1. assumption.
+Qed.    
+    
 Lemma p1_may_diverge : forall st st', st X <> 0 ->
   ~ st =[ p1 ]=> st'.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  unfold p1. unfold not.
+  remember ((WHILE ~ X = 0 DO HAVOC Y;; X ::= X + 1 END)%imp) as Hsubst.
+  intros.
+  induction H0; inversion HeqHsubst.
+  -
+    rewrite H2 in H0. simpl in H0. apply negb_false_iff in H0.
+    apply beq_nat_true in H0. apply H in H0. destruct H0.
+  -
+    assert(H': st' X <> 0).
+    {
+      apply p1_may_diverge_helper with st.
+      assumption. rewrite H3 in H0_. assumption.
+    }
+    apply IHceval2.
+    assumption. assumption.
+Qed.          
+
+Lemma p2_may_diverge_helper : forall st st',
+    st X <> 0 -> st =[ SKIP%imp ]=> st' -> st' X <> 0.
+Proof.
+  intros. remember (SKIP%imp).
+  induction H0; inversion Heqc.
+  assumption.
+Qed.
 
 Lemma p2_may_diverge : forall st st', st X <> 0 ->
   ~ st =[ p2 ]=> st'.
 Proof.
-(* FILL IN HERE *) Admitted.
+  unfold not. unfold p2. remember ((WHILE ~ X = 0 DO SKIP END)%imp).
+  intros. induction H0; inversion Heqc.
+  -
+    rewrite H2 in H0. simpl in H0. apply negb_false_iff in H0.
+    apply beq_nat_true in H0. apply H in H0. destruct H0.
+  -
+    assert(H': st' X <> 0).
+    {
+      apply p2_may_diverge_helper with st.
+      assumption. rewrite H3 in H0_. assumption.
+    }
+    apply IHceval2.
+    assumption. assumption.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced (p1_p2_equiv)  
@@ -2155,7 +2230,41 @@ Proof.
     equivalent. *)
 
 Theorem p1_p2_equiv : cequiv p1 p2.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  unfold cequiv. split.
+  -
+    destruct (st X) eqn:Eq.
+    +
+      unfold p1. unfold p2. intros.
+      inversion H; subst.
+      *
+        apply E_WhileFalse. simpl. rewrite Eq. reflexivity.
+      *
+        simpl in H2. rewrite Eq in H2. inversion H2.
+    +
+      assert(H': st X <> 0).
+      {
+        unfold not. intros. rewrite Eq in H. inversion H.
+      }
+      intros. apply (p1_may_diverge st st') in H'.
+      apply H' in H. destruct H.
+  -
+    destruct (st X) eqn:Eq.
+    +
+      unfold p1. unfold p2. intros.
+      inversion H; subst.
+      *
+        apply E_WhileFalse. simpl. rewrite Eq. reflexivity.
+      *
+        simpl in H2. rewrite Eq in H2. inversion H2.
+    +
+      assert(H': st X <> 0).
+      {
+        unfold not. intros. rewrite Eq in H. inversion H.
+      }
+      intros. apply (p2_may_diverge st st') in H'.
+      apply H' in H. destruct H.
+Qed.      
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced (p3_p4_inequiv)  
