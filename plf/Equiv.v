@@ -2366,8 +2366,33 @@ Definition p5 : com :=
 Definition p6 : com :=
   (X ::= 1)%imp.
 
+Lemma p5_p6_equiv_helper_1 : forall st st' m,
+    st =[ p5 ]=> st' -> st' = (X !-> 1; m).
+Proof.
+Admitted.
+
+Lemma p5_p6_equiv_helper_2 : forall st st',
+    st =[ p6 ]=> st' -> st' = (X !-> 1; st).
+Proof.
+  Admitted.
+  
 Theorem p5_p6_equiv : cequiv p5 p6.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  unfold cequiv. split.
+  -
+    intros. apply (p5_p6_equiv_helper_1 st st' st) in H.
+    unfold p6. rewrite H. apply E_Ass. reflexivity.
+  -
+    intros. unfold p5.   
+    destruct (st X =? 1) eqn:Eq.
+    +
+      assert(H': beval st (~ X = 1) = false).
+      {
+        simpl. rewrite Eq. reflexivity.
+      }
+      apply (E_WhileFalse (~ X = 1) st ((HAVOC X)%imp) H').
+        
+      
 (** [] *)
 
 End Himp.
