@@ -2514,21 +2514,79 @@ Definition capprox (c1 c2 : com) : Prop := forall (st st' : state),
 (** Find two programs [c3] and [c4] such that neither approximates
     the other. *)
 
-Definition c3 : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
-Definition c4 : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition c3 : com := X ::= 3.
+  
+Definition c4 : com := X ::= 4.
 
 Theorem c3_c4_different : ~ capprox c3 c4 /\ ~ capprox c4 c3.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  split.
+  -
+    unfold not. unfold capprox. unfold c3. unfold c4. intros.
+    remember (_ !-> 0) as st1.
+    remember (X !-> 3; _ !-> 0) as st2.
+    assert(H': st1 =[ X ::= 3 ]=> st2 -> st1 =[ X ::= 4 ]=> st2).
+    {
+      apply H.
+    }
+    assert(H'': st1 =[ X ::= 3 ]=> st2).
+    {
+      rewrite Heqst1. rewrite Heqst2. apply E_Ass. reflexivity.
+    }
+    apply H' in H''. 
+    rewrite Heqst1 in H''. rewrite Heqst2 in H''.
+    inversion H'';subst. simpl in H4.
+    assert(H1: (X !-> 4; _ !-> 0) X = 4).
+    {
+      apply t_update_eq.
+    }
+    assert(H2: (X !-> 3; _ !-> 0) X = 3).
+    {
+      apply t_update_eq.
+    }
+    rewrite H4 in H1. rewrite H1 in H2. inversion H2.
+  -
+    unfold not. unfold capprox. unfold c3. unfold c4. intros.
+    remember (_ !-> 0) as st1.
+    remember (X !-> 4; _ !-> 0) as st2.
+    assert(H': st1 =[ X ::= 4 ]=> st2 -> st1 =[ X ::= 3 ]=> st2).
+    {
+      apply H.
+    }
+    assert(H'': st1 =[ X ::= 4 ]=> st2).
+    {
+      rewrite Heqst1. rewrite Heqst2. apply E_Ass. reflexivity.
+    }
+    apply H' in H''. 
+    rewrite Heqst1 in H''. rewrite Heqst2 in H''.
+    inversion H'';subst. simpl in H4.
+    assert(H1: (X !-> 4; _ !-> 0) X = 4).
+    {
+      apply t_update_eq.
+    }
+    assert(H2: (X !-> 3; _ !-> 0) X = 3).
+    {
+      apply t_update_eq.
+    }
+    rewrite H4 in H2. rewrite H1 in H2. inversion H2.
+Qed.
 
 (** Find a program [cmin] that approximates every other program. *)
 
-Definition cmin : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+(* WHILE_true_nonterm *)
+Definition cmin : com := WHILE BTrue DO SKIP END.  
 
 Theorem cmin_minimal : forall c, capprox cmin c.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  unfold capprox. unfold cmin. intros.
+  assert(H': False).
+  {
+    apply (WHILE_true_nonterm BTrue SKIP st st').
+    apply refl_bequiv.
+    assumption.
+  }
+  destruct H'.
+Qed.
 
 (** Finally, find a non-trivial property which is preserved by
     program approximation (when going from left to right). *)
