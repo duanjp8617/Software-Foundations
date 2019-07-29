@@ -2284,26 +2284,6 @@ Definition p4 : com :=
   (X ::= 0;;
   Z ::= 1)%imp.
 
-(* (Z !-> 1; _ !-> 1) =[ (WHILE ~ X = 0 DO HAVOC X;; HAVOC Z END)%imp
-       ]=> (Z !-> 1; X !-> 0; _ !-> 1) *)
-
-Lemma p3_p4_inequiv_helper : forall st st',
-    st = (Z !-> 1; _ !-> 1) -> st' = (Z !-> 1; X !-> 0; _ !-> 1) ->
-    st =[ (WHILE ~ X = 0 DO HAVOC X;; HAVOC Z END)%imp ]=> st' -> False.
-Proof.
-  intros. remember ((WHILE ~ X = 0 DO HAVOC X;; HAVOC Z END)%imp) as p.
-  induction H1; inversion Heqp.
-  -
-    rewrite H3 in H1. simpl in H1.
-    assert(H' : st X = 1).
-    {
-      rewrite H. apply t_update_neq. unfold not. intros. inversion H2.
-    }
-    rewrite H' in H1. simpl in H1. inversion H1.
-  -
-    subst.
-            
-
 Theorem p3_p4_inequiv : ~ cequiv p3 p4.
 Proof.
   unfold not. unfold p3. unfold p4. unfold cequiv.
@@ -2366,32 +2346,64 @@ Definition p5 : com :=
 Definition p6 : com :=
   (X ::= 1)%imp.
 
-Lemma p5_p6_equiv_helper_1 : forall st st' m,
-    st =[ p5 ]=> st' -> st' = (X !-> 1; m).
+Lemma p5_p6_equiv_helper_1 : forall st st',
+    st =[ p5 ]=> st' -> st' = (X !-> 1; st).
+Proof.  
+  unfold p5. remember ((WHILE ~ X = 1 DO HAVOC X END)%imp) as p.
+  intros. induction H; inversion Heqp.
+  -
+    rewrite H1 in H. simpl in H.
+    destruct (st X =? 1) eqn:Eq.
+    +
+      apply beq_nat_true in Eq. rewrite <- Eq. symmetry. apply t_update_same.
+    +
+      inversion H.
+  -
+    destruct (st X =? 1) eqn:Eq.
+    +
+      rewrite H3 in H. simpl in H. rewrite Eq in H. inversion H.
+    +
+      apply IHceval2 in Heqp.
+      rewrite H4 in H0. inversion H0. rewrite <- H6 in Heqp.
+      rewrite Heqp. apply t_update_shadow.
+Qed.
+    
+Lemma p5_p6_equiv_helper_3 : forall st st',
+    st X = 1 -> st =[ p6 ]=> st' -> st = st'.
 Proof.
-Admitted.
-
-Lemma p5_p6_equiv_helper_2 : forall st st',
-    st =[ p6 ]=> st' -> st' = (X !-> 1; st).
-Proof.
-  Admitted.
+  unfold p6. intros. inversion H0; subst. simpl.
+  symmetry. rewrite <- H.
+  apply t_update_same.
+Qed.
   
 Theorem p5_p6_equiv : cequiv p5 p6.
 Proof.
   unfold cequiv. split.
   -
-    intros. apply (p5_p6_equiv_helper_1 st st' st) in H.
+    intros. apply (p5_p6_equiv_helper_1 st st') in H.
     unfold p6. rewrite H. apply E_Ass. reflexivity.
   -
-    intros. unfold p5.   
+    unfold p6. unfold p5. intros.
     destruct (st X =? 1) eqn:Eq.
     +
-      assert(H': beval st (~ X = 1) = false).
+      assert(H': st X = 1).
       {
-        simpl. rewrite Eq. reflexivity.
+        apply beq_nat_true in Eq.
+        assumption.
       }
-      apply (E_WhileFalse (~ X = 1) st ((HAVOC X)%imp) H').
-        
+      apply (p5_p6_equiv_helper_3 st st' H') in H.
+      rewrite H.
+      apply E_WhileFalse.
+      simpl. rewrite <- H. rewrite Eq. reflexivity.
+    +
+      apply E_WhileTrue with (X !-> 1; st).
+      simpl. rewrite Eq. reflexivity.
+      apply E_Havoc.
+      inversion H; subst. simpl.
+      apply E_WhileFalse.
+      reflexivity.
+Qed.
+
       
 (** [] *)
 
