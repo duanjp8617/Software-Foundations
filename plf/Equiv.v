@@ -2446,7 +2446,46 @@ Theorem swap_noninterfering_assignments: forall l1 l2 a1 a2,
     (l1 ::= a1;; l2 ::= a2)
     (l2 ::= a2;; l1 ::= a1).
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros. unfold cequiv. split.
+  -
+    intros.
+    inversion H2; subst.
+    inversion H5; subst.
+    inversion H8; subst.
+    assert(H': aeval (l1 !-> aeval st a1; st) a2 = aeval st a2).
+    {
+      apply aeval_weakening.
+      assumption.
+    }
+    rewrite H'.
+    assert(H'': (l2 !-> aeval st a2; l1 !-> aeval st a1; st) = (l1 !-> aeval st a1; l2 !-> aeval st a2; st)).
+    {
+      apply t_update_permute. assumption.
+    }
+    rewrite H''.
+    apply E_Seq with (l2 !-> aeval st a2; st).
+    apply E_Ass. reflexivity.
+    apply E_Ass. apply aeval_weakening. assumption.
+  -
+    intros.
+    inversion H2; subst.
+    inversion H5; subst.
+    inversion H8; subst.
+    assert(H': aeval (l2 !-> aeval st a2; st) a1 = aeval st a1).
+    {
+      apply aeval_weakening.
+      assumption.
+    }
+    rewrite H'.
+    assert(H'': (l2 !-> aeval st a2; l1 !-> aeval st a1; st) = (l1 !-> aeval st a1; l2 !-> aeval st a2; st)).
+    {
+      apply t_update_permute. assumption.
+    }
+    rewrite <- H''.
+    apply E_Seq with (l1 !-> aeval st a1; st).
+    apply E_Ass. reflexivity.
+    apply E_Ass. apply aeval_weakening. assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced, optional (capprox)  
