@@ -2284,8 +2284,68 @@ Definition p4 : com :=
   (X ::= 0;;
   Z ::= 1)%imp.
 
+(* (Z !-> 1; _ !-> 1) =[ (WHILE ~ X = 0 DO HAVOC X;; HAVOC Z END)%imp
+       ]=> (Z !-> 1; X !-> 0; _ !-> 1) *)
+
+Lemma p3_p4_inequiv_helper : forall st st',
+    st = (Z !-> 1; _ !-> 1) -> st' = (Z !-> 1; X !-> 0; _ !-> 1) ->
+    st =[ (WHILE ~ X = 0 DO HAVOC X;; HAVOC Z END)%imp ]=> st' -> False.
+Proof.
+  intros. remember ((WHILE ~ X = 0 DO HAVOC X;; HAVOC Z END)%imp) as p.
+  induction H1; inversion Heqp.
+  -
+    rewrite H3 in H1. simpl in H1.
+    assert(H' : st X = 1).
+    {
+      rewrite H. apply t_update_neq. unfold not. intros. inversion H2.
+    }
+    rewrite H' in H1. simpl in H1. inversion H1.
+  -
+    subst.
+            
+
 Theorem p3_p4_inequiv : ~ cequiv p3 p4.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  unfold not. unfold p3. unfold p4. unfold cequiv.
+  intros C.  destruct (C (_ !-> 1) (Z !-> 2; X !-> 0; _ !-> 1)).
+  assert(H': (_ !-> 1) =[ (Z ::= 1;; WHILE ~ X = 0 DO HAVOC X;; HAVOC Z END)%imp ]=> (Z !-> 2; X !-> 0; _ !-> 1)).
+  {
+    apply E_Seq with (Z !-> 1; _ !-> 1).
+    apply E_Ass. reflexivity.
+    apply E_WhileTrue with (Z !-> 2; X !-> 0; _ !-> 1).
+    reflexivity.
+    apply E_Seq with (Z !-> 1; X !-> 0; _ !-> 1).
+    assert(H': (Z !->1; X !-> 0; _ !-> 1) = (X !->0; Z !-> 1; _ !-> 1)).
+    {
+      apply t_update_permute.
+      unfold not. intros. inversion H1.
+    }
+    rewrite H'. apply E_Havoc.
+    assert(H': (Z !-> 2; X !-> 0; _ !-> 1) = (Z !-> 2; Z !-> 1; X !-> 0; _ !-> 1)).
+    {
+      symmetry.
+      apply t_update_shadow.
+    }
+    rewrite H'. apply E_Havoc.
+    apply E_WhileFalse.
+    reflexivity.
+  }
+  apply H in H'.
+  inversion H'; subst.
+  inversion H3; subst. simpl in H6.
+  inversion H6; subst. simpl in H7.
+  assert(H1: (Z !-> 2; X !-> 0; _ !-> 1) Z = 2).
+  {
+    apply t_update_eq.
+  }
+  assert(H2: (Z !-> 1; X !-> 0; _ !-> 1) Z = 1).
+  {
+    apply t_update_eq.
+  }
+  rewrite H7 in H2. rewrite H2 in H1.
+  inversion H1.
+Qed.
+    
 (** [] *)
 
 (** **** Exercise: 5 stars, advanced, optional (p5_p6_equiv)  
