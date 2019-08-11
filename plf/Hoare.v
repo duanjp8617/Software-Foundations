@@ -484,6 +484,19 @@ Proof.
    and [assn_sub_ex2]) and use [hoare_asgn] to prove them. *)
 
 (* FILL IN HERE *)
+Example e1 :
+  {{ (fun st => st X <= 10) [X |-> 2 * X] }}
+  X ::= 2 * X
+              {{ (fun st => st X <= 10) }}.
+Proof.
+  apply hoare_asgn. Qed.
+
+Example e2 :
+  {{ (fun st => 0 <= st X /\ st X <= 5) [X |-> 3] }}
+    X ::= 3
+            {{(fun st => 0 <= st X /\ st X <= 5) }}  .
+Proof.
+  apply hoare_asgn. Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_hoare_asgn_examples : option (nat*string) := None.
