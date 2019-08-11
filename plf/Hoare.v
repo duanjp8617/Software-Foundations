@@ -1,6 +1,6 @@
 (** * Hoare: Hoare Logic, Part I *)
 
-Set Warnings "-notation-overridden,-parsing".
+(* Set Warnings "-notation-overridden,-parsing". *)
 From PLF Require Import Maps.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Arith.Arith.
@@ -572,7 +572,44 @@ Theorem hoare_asgn_fwd :
   {{fun st => P (X !-> m ; st)
            /\ st X = aeval (X !-> m ; st) a }}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold hoare_triple.
+  intros.
+  destruct H0.
+  split.
+  -
+    inversion H; subst.
+    assert(H': (X !-> st X; X !-> aeval st a; st) = (X !-> st X; st)).
+    {
+      apply t_update_shadow.
+    }
+    rewrite H'.
+    assert(H'': (X !-> st X ; st) = st).
+    {
+      apply t_update_same.
+    }
+    rewrite H''.
+    assumption.
+  -
+    inversion H; subst.
+    assert(H1: (X !-> aeval st a; st) X = aeval st a).
+    {
+      apply t_update_eq.
+    }
+    rewrite H1.
+    assert(H': (X !-> st X; X !-> aeval st a; st) = (X !-> st X; st)).
+    {
+      apply t_update_shadow.
+    }
+    rewrite H'.
+    assert(H'': (X !-> st X ; st) = st).
+    {
+      apply t_update_same.
+    }
+    rewrite H''.
+    reflexivity.
+Qed.
+
+
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced, optional (hoare_asgn_fwd_exists)  
