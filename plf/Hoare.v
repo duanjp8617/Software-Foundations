@@ -519,8 +519,31 @@ Definition manual_grade_for_hoare_asgn_examples : option (nat*string) := None.
     the rule doesn't work.) *)
 
 (* FILL IN HERE *)
+Example asgn_wrong_counter_exp :
+  ~( {{ (fun st => True) }} X ::= X + 1 {{ (fun st => st X = st X + 1) }}).
+Proof.
+  unfold not. unfold hoare_triple.
+  intros.
+  remember (X !-> 1) as st1.
+  remember (X !-> 2; X !-> 1) as st2.
+  assert(H': st1 =[ X ::= X + 1 ]=> st2).
+  {
+    rewrite Heqst1. rewrite Heqst2.
+    apply E_Ass. reflexivity.
+  }
+  assert(H'': st2 X = st2 X + 1).
+  {
+    apply (H st1 st2 H' I).
+  }
+  rewrite Heqst2 in H''. simpl in H''.
+  assert(H''': (X !-> 2; X !-> 1) X = 2).
+  {
+    apply t_update_eq.
+  }
+  rewrite H''' in H''. inversion H''.
+Qed.
 
-(* Do not modify the following line: *)
+  (* Do not modify the following line: *)
 Definition manual_grade_for_hoare_asgn_wrong : option (nat*string) := None.
 (** [] *)
 
