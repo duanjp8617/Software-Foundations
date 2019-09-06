@@ -826,7 +826,7 @@ Example hoare_asgn_example1' :
 Proof.
   eapply hoare_consequence_pre.
   apply hoare_asgn.
-  intros st H.  reflexivity.  Qed.
+  intros st H. reflexivity. Qed.
 
 (** In general, the [eapply H] tactic works just like [apply H] except
     that, instead of failing if unifying the goal with the conclusion
@@ -1022,7 +1022,29 @@ Example hoare_asgn_example4 :
   X ::= 1;; Y ::= 2
   {{fun st => st X = 1 /\ st Y = 2}}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eapply hoare_seq.
+  -
+    apply hoare_asgn.
+  -
+    apply hoare_consequence_pre with (fun st => 1 = 1).
+    +
+      apply hoare_consequence_post with (fun st => st X = 1).
+      *
+        unfold hoare_triple. intros. inversion H; subst. reflexivity.
+      *
+        intros st H. unfold assn_sub. split.
+        {
+          assert(H':  (Y !-> aeval st 2; st) X = st X ).
+          {
+            apply t_update_neq. intros H'. inversion H'.
+          }
+          rewrite H'. assumption.
+        }
+        reflexivity.
+    +
+      intros st H. reflexivity.
+Qed.
+    
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (swap_exercise)  
@@ -1038,15 +1060,70 @@ Proof.
     your proof will want to start at the end and work back to the
     beginning of your program.)  *)
 
-Definition swap_program : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition fst_half : com :=
+  Z ::= X ;; X ::= Y.
+
+Definition swap_program : com :=
+  fst_half;; Y ::= Z.
 
 Theorem swap_exercise :
   {{fun st => st X <= st Y}}
   swap_program
   {{fun st => st Y <= st X}}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold swap_program.
+  eapply hoare_seq.
+  -
+    apply hoare_asgn.
+  -
+    unfold fst_half.
+    eapply hoare_seq.
+    +
+      apply hoare_asgn.
+    +
+      eapply hoare_consequence_pre.
+      *
+        apply hoare_asgn.
+      *
+        intros st H.
+        unfold assn_sub. simpl.
+        assert (H1 :   (Y !-> (X !-> (Z !-> st X; st) Y; Z !-> st X; st) Z; X !-> (Z !-> st X; st) Y; Z !-> st X; st) Y = (X !-> (Z !-> st X; st) Y; Z !-> st X; st) Z).
+        {
+          apply t_update_eq.
+        }
+        rewrite H1.
+        assert(H2 :  (X !-> (Z !-> st X; st) Y; Z !-> st X; st) Z = (Z !-> st X; st) Z).
+        {
+          apply t_update_neq.
+          intros H'. inversion H'.
+        }
+        rewrite H2.
+        assert(H3: (Y !-> (Z !-> st X; st) Z; X !-> (Z !-> st X; st) Y; Z !-> st X; st) X = (X !-> (Z !-> st X; st) Y; Z !-> st X; st) X).
+        {
+          apply t_update_neq.
+          intros H'. inversion H'.
+        }
+        rewrite H3.
+        assert(H4 : (X !-> (Z !-> st X; st) Y; Z !-> st X; st) X = (Z !-> st X; st) Y).
+        {
+          apply t_update_eq.
+        }
+        rewrite H4.
+        clear H1 H2 H3 H4.
+        assert(H1 : (Z !-> st X; st) Z = st X).
+        {
+          apply t_update_eq.
+        }
+        rewrite H1.
+        assert(H2: (Z !-> st X; st) Y = st Y).
+        {
+          apply t_update_neq.
+          intros H'. inversion H'.
+        }
+        rewrite H2.
+        assumption.
+Qed.          
+         
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (hoarestate1)  
@@ -1058,8 +1135,8 @@ Proof.
            X ::= 3;; Y ::= a
          {{fun st => st Y = n}}.
 *)
+(* st = X !-> 1, a = X, then st' Y = 3, not 1*)
 
-(* FILL IN HERE *)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_hoarestate1 : option (nat*string) := None.
