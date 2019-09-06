@@ -633,7 +633,36 @@ Theorem hoare_asgn_fwd_exists :
                 st X = aeval (X !-> m ; st) a }}.
 Proof.
   intros a P.
-  (* FILL IN HERE *) Admitted.
+  unfold hoare_triple. intros.
+  exists (st X).
+  split.
+  -
+    inversion H; subst.
+    assert(H': (X !-> st X; X !-> aeval st a; st) = (X !-> st X; st)).
+    {
+      apply t_update_shadow.
+    }
+    rewrite H'.
+    assert(H'': (X !-> st X ; st) = st).
+    {
+      apply t_update_same.
+    }
+    rewrite H''.
+    assumption.
+  -
+    inversion H; subst.
+    assert(H': (X !-> st X; X !-> aeval st a; st) = (X !-> st X; st)).
+    {
+      apply t_update_shadow.
+    }
+    rewrite H'.
+    assert(H'': (X !-> st X ; st) = st).
+    {
+      apply t_update_same.
+    }
+    rewrite H''. apply t_update_eq.
+Qed.
+
 (** [] *)
 
 (* ================================================================= *)
