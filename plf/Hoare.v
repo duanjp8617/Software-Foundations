@@ -1250,7 +1250,8 @@ Proof.
   apply hoare_if.
   - (* Then *)
     eapply hoare_consequence_pre. apply hoare_asgn.
-    unfold bassn, assn_sub, t_update, assert_implies.
+    unfold bassn, assn_sub, assert_implies.
+    unfold t_update.
     simpl. intros st [_ H].
     apply eqb_eq in H.
     rewrite H. omega.
@@ -1273,7 +1274,25 @@ Theorem if_minus_plus :
   FI
   {{fun st => st Y = st X + st Z}}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply hoare_if.
+  -
+    eapply hoare_consequence_pre.
+    apply hoare_asgn.
+    unfold bassn, assn_sub, assert_implies.
+    intros. unfold t_update. simpl.
+    destruct H as [H1 H2].
+    simpl in H2.
+    apply leb_complete in H2.
+    apply le_plus_minus_r in H2. rewrite H2. reflexivity.
+  -
+    eapply hoare_consequence_pre.
+    apply hoare_asgn.
+    unfold bassn, assn_sub, assert_implies.
+    intros. unfold t_update. simpl.
+    reflexivity.
+Qed.
+
+    
 (** [] *)
 
 (* ----------------------------------------------------------------- *)
@@ -1351,7 +1370,13 @@ Inductive ceval : com -> state -> state -> Prop :=
       st  =[ c ]=> st' ->
       st' =[ WHILE b DO c END ]=> st'' ->
       st  =[ WHILE b DO c END ]=> st''
-(* FILL IN HERE *)
+  | E_If1True : forall st st' b c,
+      beval st b = true ->
+      ceval c st st' ->
+      ceval (CIf1 b c) st st'
+  | E_If1False : forall st b c,
+      beval st b = false ->
+      ceval (CIf1 b c) st st
 
   where "st '=[' c ']=>' st'" := (ceval c st st').
 Close Scope imp_scope.
@@ -1374,7 +1399,24 @@ Notation "{{ P }}  c  {{ Q }}" := (hoare_triple P c Q)
     for one-sided conditionals. Try to come up with a rule that is
     both sound and as precise as possible. *)
 
-(* FILL IN HERE *)
+Theorem hoare_if1 : forall P Q b c,
+  {{fun st => P st /\ bassn b st}} c {{Q}} ->
+  {{fun st => P st /\ ~ (bassn b st)}} CSkip {{Q}} ->
+  {{P}} (CIf1 b c) {{Q}}.
+Proof.
+  intros. unfold hoare_triple. intros.
+  inversion H1; subst.
+  -
+    apply (H st st'). assumption. split.
+    + assumption.
+    + unfold bassn. assumption.
+  -
+    apply (H0 st' st').
+    apply E_Skip.
+    split.
+    + assumption.
+    + unfold bassn. unfold not. intros. rewrite H3 in H7. inversion H7.
+Qed.                
 
 (** For full credit, prove formally [hoare_if1_good] that your rule is
     precise enough to show the following valid Hoare triple:
@@ -1396,8 +1438,33 @@ Lemma hoare_if1_good :
     X ::= X + Y
   FI)%imp
   {{ fun st => st X = st Z }}.
-Proof. (* FILL IN HERE *) Admitted.
-
+Proof.
+  apply hoare_if1.
+  -
+    unfold hoare_triple. intros.
+    inversion H; subst.
+    unfold t_update. simpl.
+    destruct H0 as [H1 H2].
+    assumption.
+  -
+    unfold hoare_triple. intros.
+    inversion H. rewrite <- H3.
+    destruct H0 as [H1' H2'].
+    unfold bassn in H2'.
+    simpl in H2'.
+    destruct (negb (st Y =? 0)) eqn:Eq.
+    +
+      exfalso. apply H2'. reflexivity.
+    +
+      destruct (st Y =? 0) eqn:Eq1.
+      *
+        symmetry in Eq1. apply beq_nat_eq in Eq1.
+        rewrite <- H1'. rewrite Eq1.
+        rewrite plus_comm. reflexivity.
+      *
+        inversion Eq.
+Qed.
+          
 End If1.
 
 (* Do not modify the following line: *)
