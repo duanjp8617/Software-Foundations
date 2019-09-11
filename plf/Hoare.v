@@ -1693,8 +1693,15 @@ Inductive ceval : state -> com -> state -> Prop :=
       st  =[ c ]=> st' ->
       st' =[ WHILE b DO c END ]=> st'' ->
       st  =[ WHILE b DO c END ]=> st''
-(* FILL IN HERE *)
-
+  | E_RepeatFalse : forall b st st' c,
+      st =[ c ]=> st' ->
+      beval st' b = false ->
+      st =[ (CRepeat c b) ]=> st'
+  | E_RepeatTrue : forall b st st' st'' c,
+      st =[ c ]=> st' ->
+      beval st' b = true ->
+      st' =[ (CRepeat c b) ]=> st'' ->
+      st =[ (CRepeat c b) ]=> st''                        
 where "st '=[' c ']=>' st'" := (ceval st c st').
 
 (** A couple of definitions from above, copied here so they use the
@@ -1724,6 +1731,10 @@ Proof.
 (** Now state and prove a theorem, [hoare_repeat], that expresses an
     appropriate proof rule for [repeat] commands.  Use [hoare_while]
     as a model, and try to make your rule as precise as possible. *)
+
+Theorem hoare_repeat : forall P b c,
+  {{P}} c {{ fun st => P st /\ (bassn b st)}} ->
+  {{P}} REPEAT c UNTIL b END {{fun st => P st /\ ~ (bassn b st)}}.
 
 (* FILL IN HERE *)
 
@@ -1814,7 +1825,7 @@ Notation "'TEST' e1 'THEN' e2 'ELSE' e3 'FI'" :=
 Notation "'HAVOC' X" := (CHavoc X) (at level 60).
 
 Reserved Notation "st '=[' c ']=>' st'" (at level 40).
-
+ 
 Inductive ceval : com -> state -> state -> Prop :=
   | E_Skip : forall st,
       st =[ SKIP ]=> st
