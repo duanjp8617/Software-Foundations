@@ -1693,15 +1693,10 @@ Inductive ceval : state -> com -> state -> Prop :=
       st  =[ c ]=> st' ->
       st' =[ WHILE b DO c END ]=> st'' ->
       st  =[ WHILE b DO c END ]=> st''
-  | E_RepeatFalse : forall b st st' c,
+  | E_Repeat : forall b st st' st'' c,
       st =[ c ]=> st' ->
-      beval st' b = false ->
-      st =[ (CRepeat c b) ]=> st'
-  | E_RepeatTrue : forall b st st' st'' c,
-      st =[ c ]=> st' ->
-      beval st' b = true ->
-      st' =[ (CRepeat c b) ]=> st'' ->
-      st =[ (CRepeat c b) ]=> st''                        
+      st' =[ WHILE (~ b) DO c END ]=> st'' ->
+      st =[ REPEAT c UNTIL b END ]=> st''                        
 where "st '=[' c ']=>' st'" := (ceval st c st').
 
 (** A couple of definitions from above, copied here so they use the
@@ -1726,15 +1721,53 @@ Definition ex1_repeat :=
 Theorem ex1_repeat_works :
   empty_st =[ ex1_repeat ]=> (Y !-> 1 ; X !-> 1).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eapply E_Repeat with (Y !-> 1; X !-> 1).
+  -
+    apply E_Seq with (X !-> 1; empty_st).
+    +
+      apply E_Ass. reflexivity.
+    +
+      apply E_Ass. simpl. reflexivity.
+  -
+    apply E_WhileFalse. simpl. reflexivity.
+Qed.
+      
 
 (** Now state and prove a theorem, [hoare_repeat], that expresses an
     appropriate proof rule for [repeat] commands.  Use [hoare_while]
     as a model, and try to make your rule as precise as possible. *)
+(* c ;; WHILE !b DO c END *)
 
-Theorem hoare_repeat : forall P b c,
-  {{P}} c {{ fun st => P st /\ (bassn b st)}} ->
-  {{P}} REPEAT c UNTIL b END {{fun st => P st /\ ~ (bassn b st)}}.
+Theorem hoare_repeat : forall P Q b c,
+    {{fun st => P st}} c {{fun st => Q st}} ->
+    {{fun st => Q st /\ ~ bassn b st}} c {{fun st => Q st}} ->
+    {{fun st => P st}} REPEAT c UNTIL b END {{fun st => Q st /\ bassn b st}}.
+Proof.
+  intros P Q b c Hhoare1 Hhoare2 st st' He HP.
+  inversion He; subst. clear He.
+  assert(HP': Q st'0).
+  {
+    apply (Hhoare1 st st'0).
+    assumption. assumption.
+  }
+  clear HP. clear H2. clear Hhoare1.
+  (* Like we've seen before, we need to reason by induction
+     on [He], because, in the "keep looping" case, its hypotheses
+     talk about the whole loop instead of just [c]. *)
+  remember (WHILE (~ b) DO c END) as wcom eqn:Heqwcom.
+  induction H4;
+    try (inversion Heqwcom); subst; clear Heqwcom.
+  - (* E_WhileFalse *) 
+    split. assumption. 
+    apply bexp_eval_true. simpl in H.
+    destruct (beval st0 b). reflexivity. inversion H.
+  - (* E_WhileTrue *)
+    apply IHceval2. reflexivity.
+    apply (Hhoare2 st0 st').
+    assumption.
+    split. assumption. apply bexp_eval_false. simpl in H.
+    destruct (beval st0 b). inversion H. reflexivity.
+Qed.
 
 (* FILL IN HERE *)
 
@@ -1749,6 +1782,57 @@ Theorem hoare_repeat : forall P b c,
   {{ X = 0 /\ Y > 0 }}
 *)
 
+Theorem example1_helper1 :
+  {{fun st => ~ (st X = 0)}}
+    REPEAT
+    Y ::= X;;
+    X ::= X - 1
+    UNTIL X = 0 END
+  {{fun st => (st Y = st X + 1) /\ bassn (X = 0) st}}.
+Proof.
+  apply hoare_repeat.
+  -
+    unfold hoare_triple. intros. inversion H; subst.
+    inversion H4; subst. inversion H6; subst. unfold t_update. simpl.
+    omega.
+  -
+    unfold hoare_triple. intros. inversion H; subst.
+    inversion H4; subst. inversion H6; subst. unfold t_update. simpl.
+    destruct H0 as [H01 H02].
+    unfold bassn in H02. simpl in H02.
+    assert(H03: st X <> 0).
+    {
+      unfold not. intros. rewrite H0 in H02. simpl in H02. apply H02. reflexivity.
+    }
+    omega.
+Qed.
+
+Theorem example1 :
+  {{fun st => ~ (st X = 0)}}
+    REPEAT
+    Y ::= X;;
+    X ::= X - 1
+    UNTIL X = 0 END
+  {{fun st => st X = 0 /\ ~ (st Y = 0)}}.
+Proof.
+  unfold hoare_triple. intros.
+  assert(H': (st' Y = st' X + 1) /\ bassn (X = 0) st').
+  {
+    apply (example1_helper1 st st').
+    assumption. assumption.
+  }
+  destruct H' as [H1 H2].
+  unfold bassn in H2. simpl in  H2.
+  assert(H3 : st' X = 0).
+  {
+    destruct (st' X).
+    - reflexivity.
+    - simpl in H2. inversion H2.
+  }
+  omega.
+Qed.
+
+  
 End RepeatExercise.
 
 (* Do not modify the following line: *)
